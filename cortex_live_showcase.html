@@ -366,6 +366,11 @@ canvas#poincareCanvas {
       </div>
 
       <div class="slider-group">
+        <label><span>Matériel périphérique (Capteurs IoT/LoRa, sondes, automates, câblage) :</span><b id="lblSensors" style="color:var(--cyan)">1 800 $ CAD (100% Client)</b></label>
+        <input type="range" id="slSensors" min="0" max="15000" step="200" value="1800" oninput="calcBusiness()">
+      </div>
+
+      <div class="slider-group">
         <label><span>Nombre de Tours vendues / an :</span><b id="lblUnits" class="pill-green">10 Tours / an</b></label>
         <input type="range" id="slUnits" min="1" max="50" step="1" value="10" oninput="calcBusiness()">
       </div>
@@ -388,8 +393,16 @@ canvas#poincareCanvas {
           <td class="num" id="tdSubYours">- 2 000 $</td>
         </tr>
         <tr>
-          <td>Excédent sous-traitant facturé directement au client</td>
+          <td>Excédent sous-traitant (&gt; 2 000 $) facturé directement au client</td>
           <td class="num" style="color:var(--cyan)" id="tdSubClient">0 $ (payé par le client)</td>
+        </tr>
+        <tr>
+          <td>Capteurs, sondes IoT, automates, caméras &amp; câblage périphérique</td>
+          <td class="num" style="color:var(--cyan)" id="tdSensorsClient">1 800 $ (100 % payé par le client)</td>
+        </tr>
+        <tr style="background:rgba(0,240,255,0.06)">
+          <td><b>TOTAL FACTURÉ AU CLIENT (Appliance + Surplus + Capteurs)</b></td>
+          <td class="num" style="color:var(--cyan);font-weight:800" id="tdTotalClientInvoice">29 800 $ CAD</td>
         </tr>
         <tr style="background:#111b2d">
           <td><b>PROFIT NET PAR TOUR POUR AINEWGEN</b></td>
@@ -401,9 +414,57 @@ canvas#poincareCanvas {
         </tr>
       </table>
 
-      <div style="margin-top:12px;padding:10px;background:#090e17;border-left:3px solid var(--gold);border-radius:6px;font-size:12px">
-        <b>Clause contractuelle recommandée (Devis AInewgen) :</b><br>
-        « L'acquisition de l'Appliance Souveraine CORTEX (25 000 $ – 30 000 $ CAD) inclut un forfait d'intégration sur site allant jusqu'à <b>2 000 $ CAD</b> pris en charge par 18115915 Canada Inc. Toute personnalisation additionnelle, câblage spécifique ou heure de sous-traitance au-delà de ce plafond de 2 000 $ est à la charge exclusive du client. »
+      <div style="margin-top:12px;padding:12px;background:#090e17;border-left:3px solid var(--gold);border-radius:6px;font-size:12px;line-height:1.5">
+        <b>Clause contractuelle stricte (18115915 Canada Inc. — Protection Marge Brute) :</b><br>
+        « L'acquisition de l'Appliance Souveraine CORTEX (25 000 $ – 30 000 $ CAD) couvre uniquement l'unité centrale de calcul pré-indexée (Tour CORTEX 𝔹⁸) et un forfait de main-d'œuvre d'intégration sous-traitant plafonné à <b>2 000 $ CAD</b>. <b>Tout le reste du matériel périphérique</b> (capteurs IoT, sondes de température/humidité, passerelles LoRa/ESP32, automates PLC, caméras industrielles, câblage électrique/réseau et boîtiers) ainsi que toute heure de sous-traitance excédant 2 000 $ CAD sont <b>intégralement payés par le client</b>. »
+      </div>
+
+      <!-- GENERATEUR DE DEVIS OFFICIEL & PAIEMENT CRYPTO.COM / STRIPE -->
+      <div style="margin-top:16px;padding:16px;background:linear-gradient(135deg,#0d1526,#0a101d);border:1px solid rgba(0,255,170,0.35);border-radius:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <b style="color:var(--green);font-size:14px">📄 Générateur de Devis Officiel & Paiement Direct (Stripe / Crypto.com)</b>
+          <span style="font-size:11px;background:rgba(0,240,255,0.12);color:var(--cyan);padding:3px 8px;border-radius:6px;font-weight:700">18115915 Canada Inc.</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Nom de l'Entreprise Cliente :</label>
+            <input type="text" id="qClientName" value="Entreprise Cliente Inc." style="width:100%;background:#060911;border:1px solid var(--border);color:#fff;padding:8px 10px;border-radius:6px;font-size:12px">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Secteur / Configuration :</label>
+            <select id="qSector" style="width:100%;background:#060911;border:1px solid var(--border);color:#fff;padding:8px 10px;border-radius:6px;font-size:12px">
+              <option value="Usinage CNC (Fanuc / Siemens / Heidenhain) & G-Code">Usinage CNC & G-Code Souverain</option>
+              <option value="Agri-Souverain PME (Chambres Froides IoT & CanadaGAP)">Agri-Souverain PME (Frigos & CanadaGAP)</option>
+              <option value="Conception Électronique PCB (Gerber KiCad & DRC 8D)">Studio Électronique PCB & DRC 8D</option>
+              <option value="Cybersécurité Loi 25 & Pare-Feu Sémantique KillBlackHat">Cybersécurité Loi 25 & KillBlackHat</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn" onclick="openOfficialQuote()" style="flex:1;background:linear-gradient(135deg,var(--green),var(--cyan));color:#000;font-weight:800;padding:10px 14px;border:none;border-radius:8px;cursor:pointer">🖨️ Générer le Devis / Contrat PDF (Imprimable)</button>
+          <button class="btn" onclick="toggleCryptoBox()" style="flex:1;background:linear-gradient(135deg,#1199fa,#00d2ff);color:#fff;font-weight:800;padding:10px 14px;border:none;border-radius:8px;cursor:pointer">🦁 Payer en USDC / USDT / CRO (Compte Crypto.com)</button>
+        </div>
+
+        <!-- BOITE DE PAIEMENT CRYPTO.COM -->
+        <div id="cryptoPayBox" style="display:none;background:#060911;border:1px solid #1199fa;border-radius:8px;padding:14px;margin-top:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="color:#1199fa;font-weight:800;font-size:13px">🦁 Règlement Instantané vers Portefeuille Crypto.com (18115915 Canada Inc.)</span>
+            <span style="font-size:11px;color:var(--green);font-weight:700">● 0% Risque Chargeback</span>
+          </div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
+            Envoyez l'acompte de commande (50 % = <b id="cryptoDepositAmt" style="color:#fff">14 900 $ CAD</b> équivalent en <b>USDC, USDT, ETH ou CRO</b>) sur les réseaux <b>Polygon, Ethereum (ERC-20) ou Cronos</b> à l'adresse officielle Crypto.com ci-dessous :
+          </p>
+          <div style="display:flex;gap:8px;align-items:center;background:#0c1322;border:1px solid var(--border);padding:8px 10px;border-radius:6px;font-family:monospace;font-size:12px;color:var(--cyan);word-break:break-all">
+            <span id="cryptoWalletAddr">0xE72EdE72574cadE05Daa64DF7d0459A0aDFe5D95</span>
+            <button onclick="copyCryptoAddr()" style="margin-left:auto;background:#1199fa;color:#fff;border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">📋 Copier l'adresse</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+            <span>Réseaux supportés : <b>ERC-20 / Polygon / Cronos / Arbitrum</b></span>
+            <span id="copyConfirmMsg" style="color:var(--green);font-weight:700"></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -431,10 +492,13 @@ function calcBusiness() {
   const price = parseInt(document.getElementById('slPrice').value, 10);
   const hw = parseInt(document.getElementById('slHw').value, 10);
   const subTotal = parseInt(document.getElementById('slSub').value, 10);
+  const sensorsEl = document.getElementById('slSensors');
+  const sensors = sensorsEl ? parseInt(sensorsEl.value, 10) : 1800;
   const units = parseInt(document.getElementById('slUnits').value, 10);
 
   const subYours = Math.min(subTotal, 2000);
   const subClient = Math.max(0, subTotal - 2000);
+  const totalClientInvoice = price + subClient + sensors;
   const netUnit = price - hw - subYours;
   const pct = ((netUnit / price) * 100).toFixed(1);
   const netYear = netUnit * units;
@@ -442,15 +506,131 @@ function calcBusiness() {
   document.getElementById('lblPrice').textContent = price.toLocaleString('fr-CA') + ' $ CAD';
   document.getElementById('lblHw').textContent = hw.toLocaleString('fr-CA') + ' $ CAD';
   document.getElementById('lblSub').textContent = subTotal.toLocaleString('fr-CA') + ' $ CAD';
+  if (document.getElementById('lblSensors')) {
+    document.getElementById('lblSensors').textContent = sensors.toLocaleString('fr-CA') + ' $ CAD (100% Client)';
+  }
   document.getElementById('lblUnits').textContent = units + (units > 1 ? ' Tours / an' : ' Tour / an');
 
   document.getElementById('tdPrice').textContent = price.toLocaleString('fr-CA') + ' $';
   document.getElementById('tdHw').textContent = '- ' + hw.toLocaleString('fr-CA') + ' $';
   document.getElementById('tdSubYours').textContent = '- ' + subYours.toLocaleString('fr-CA') + ' $';
   document.getElementById('tdSubClient').textContent = subClient.toLocaleString('fr-CA') + ' $ (payé par le client)';
+  if (document.getElementById('tdSensorsClient')) {
+    document.getElementById('tdSensorsClient').textContent = sensors.toLocaleString('fr-CA') + ' $ (100 % payé par le client)';
+  }
+  if (document.getElementById('tdTotalClientInvoice')) {
+    document.getElementById('tdTotalClientInvoice').textContent = totalClientInvoice.toLocaleString('fr-CA') + ' $ CAD';
+  }
+  if (document.getElementById('cryptoDepositAmt')) {
+    document.getElementById('cryptoDepositAmt').textContent = Math.round(totalClientInvoice * 0.5).toLocaleString('fr-CA') + ' $ CAD';
+  }
   document.getElementById('tdNetUnit').textContent = '+ ' + netUnit.toLocaleString('fr-CA') + ' $ (' + pct + ' %)';
   document.getElementById('spUnits').textContent = units;
   document.getElementById('tdNetYear').textContent = '+ ' + netYear.toLocaleString('fr-CA') + ' $ CAD';
+}
+
+function toggleCryptoBox() {
+  const box = document.getElementById('cryptoPayBox');
+  if (box) box.style.display = (box.style.display === 'none') ? 'block' : 'none';
+}
+
+function copyCryptoAddr() {
+  const addr = document.getElementById('cryptoWalletAddr').textContent.trim();
+  navigator.clipboard.writeText(addr);
+  const msg = document.getElementById('copyConfirmMsg');
+  if (msg) {
+    msg.textContent = '✅ Adresse copiée dans le presse-papiers !';
+    setTimeout(() => { msg.textContent = ''; }, 3500);
+  }
+}
+
+function openOfficialQuote() {
+  const clientName = (document.getElementById('qClientName')?.value || 'Client B2B').trim();
+  const sector = document.getElementById('qSector')?.value || 'Usinage CNC & Automatisation';
+  const price = parseInt(document.getElementById('slPrice').value, 10);
+  const subTotal = parseInt(document.getElementById('slSub').value, 10);
+  const sensors = parseInt(document.getElementById('slSensors')?.value || '1800', 10);
+  const subClient = Math.max(0, subTotal - 2000);
+  const totalHT = price + subClient + sensors;
+  const deposit50 = Math.round(totalHT * 0.5);
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const quoteId = 'DEV-CORTEX-' + Math.floor(100000 + Math.random() * 900000);
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Devis Officiel ${quoteId} — 18115915 Canada Inc.</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; max-width: 840px; margin: 24px auto; padding: 28px; line-height: 1.5; }
+  .hdr { display: flex; justify-content: space-between; border-bottom: 3px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13.5px; }
+  th, td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; }
+  th { background: #f1f5f9; }
+  .clause { background: #f8fafc; border-left: 4px solid #0284c7; padding: 12px 16px; font-size: 12.5px; margin: 16px 0; }
+  .crypto-box { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px 16px; font-size: 12.5px; margin-top: 16px; }
+  @media print { .no-print { display: none; } }
+</style></head><body>
+  <div class="no-print" style="margin-bottom:16px;text-align:right">
+    <button onclick="window.print()" style="background:#0284c7;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-weight:bold;cursor:pointer">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+  <div class="hdr">
+    <div>
+      <h1 style="margin:0;color:#0284c7;font-size:22px">18115915 CANADA INC. (AInewgen)</h1>
+      <div style="font-size:12.5px;color:#475569">Architecture IA Souveraine CORTEX 𝔹⁸ & Automatisation Industrielle<br>Québec, Canada · https://ainewgen.ca · breyrevai@ainewgen.ca</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-weight:bold;font-size:16px">SOUMISSION / DEVIS OFFICIEL</div>
+      <div style="font-size:13px;color:#475569">Réf : <b>${quoteId}</b><br>Date : ${dateStr}<br>Validité : 30 jours</div>
+    </div>
+  </div>
+  <div style="margin-bottom:16px;font-size:14px">
+    <b>Client :</b> ${clientName}<br>
+    <b>Configuration retenue :</b> Appliance Souveraine CORTEX 𝔹⁸ — ${sector}
+  </div>
+  <table>
+    <thead><tr><th>Désignation des Prestations & Matériels</th><th style="text-align:right">Montant (CAD HT)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>1. Appliance Matérielle Souveraine CORTEX 𝔹⁸ Clé-en-Main (100 % Local / Air-Gapped)</b><br>
+        <span style="font-size:12px;color:#475569">Serveur Haute Densité Ryzen 9 (64 Mo Cache L3) + Dual-GPU 28 Go VRAM + 64 Go RAM + NVMe + Licence perpétuelle sur site du démon <code>cortexd</code> (Protocole 0xCB 64B, 166 230+ concepts pré-indexés) + Pare-feu KillBlackHat.</span></td>
+        <td style="text-align:right;font-weight:bold">${price.toLocaleString('fr-CA')} $</td>
+      </tr>
+      <tr>
+        <td><b>2. Forfait de Main-d'Œuvre d'Intégration Sous-Traitant (Plafond 2 000 $ CAD inclus)</b><br>
+        <span style="font-size:12px;color:#475569">Pris en charge par 18115915 Canada Inc. jusqu'à concurrence de 2 000 $ CAD.</span></td>
+        <td style="text-align:right;color:#16a34a;font-weight:bold">INCLUS (0 $)</td>
+      </tr>
+      <tr>
+        <td><b>3. Dépassement d'Intégration / Sous-Traitance sur Mesure (&gt; 2 000 $ CAD)</b><br>
+        <span style="font-size:12px;color:#475569">Facturé intégralement au client au-delà du plafond de 2 000 $ CAD.</span></td>
+        <td style="text-align:right">${subClient.toLocaleString('fr-CA')} $</td>
+      </tr>
+      <tr>
+        <td><b>4. Matériel Périphérique, Capteurs IoT, Sondes, Automates & Câblage</b><br>
+        <span style="font-size:12px;color:#475569">Capteurs, sondes de température/humidité, passerelles LoRa/ESP32, caméras, automates et câblage (100 % à la charge du client).</span></td>
+        <td style="text-align:right">${sensors.toLocaleString('fr-CA')} $</td>
+      </tr>
+      <tr style="background:#f8fafc;font-size:15px">
+        <td><b>TOTAL NET HORS TAXES (TPS/TVQ en sus)</b></td>
+        <td style="text-align:right;font-weight:bold;color:#0284c7">${totalHT.toLocaleString('fr-CA')} $ CAD</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="clause">
+    <b>CLAUSE CONTRACTUELLE D'EXCLUSION DU MATÉRIEL PÉRIPHÉRIQUE & PLAFOND SOUS-TRAITANT :</b><br>
+    Le prix de base de l'Appliance Souveraine CORTEX (${price.toLocaleString('fr-CA')} $ CAD) couvre exclusivement le serveur central CORTEX 𝔹⁸, sa licence logicielle perpétuelle sur site et un budget d'intégration sous-traitant plafonné à <b>2 000 $ CAD</b>. <b>Tout le reste du matériel</b> (capteurs, sondes, passerelles IoT, câblage, armoires électriques, automates) ainsi que toute heure de sous-traitance excédant 2 000 $ CAD sont <b>intégralement payés par le client</b>.
+  </div>
+  <div class="crypto-box">
+    <b>MODALITÉS DE RÈGLEMENT (Acompte de 50 % à la commande : ${deposit50.toLocaleString('fr-CA')} $ CAD) :</b><br>
+    • <b>Virement Bancaire / Traite Commerciale :</b> Au nom de <b>18115915 Canada Inc.</b><br>
+    • <b>Paiement Crypto.com (USDC / USDT / ETH / CRO — 0 % délai bancaire) :</b><br>
+      Adresse officielle (Réseaux ERC-20 / Polygon / Cronos) : <code>0xE72EdE72574cadE05Daa64DF7d0459A0aDFe5D95</code>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-top:36px;padding-top:16px;border-top:1px solid #cbd5e1;font-size:13px">
+    <div><b>Pour 18115915 Canada Inc. (AInewgen) :</b><br>Brandon Bujold Charlebois, Président</div>
+    <div><b>Bon pour accord (Signature Client & Date) :</b><br><br>_____________________________________</div>
+  </div>
+</body></html>`);
+  w.document.close();
 }
 
 function drawPoincareBall(activeHits = [], trace = []) {
