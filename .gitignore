@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.npy
+*.db
+*.db-wal
+*.db-shm
+*.jsonl
+training_data/
+.env

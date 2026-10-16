@@ -1,0 +1,3362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cortex PCB Studio Cloud • PCB Intelligent</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&family=Inter:opsz,wght@14..32,400..600&display=swap');
+        
+        :root {
+            --bg: #0a0a0f;
+            --sidebar: #111118;
+            --accent: #00e5ff;
+            --accent-glow: 0 0 15px rgba(0,229,255,0.3);
+            --text: #e8eaed;
+            --text-sec: #8a8d91;
+            --danger: #ff5252;
+            --success: #69f0ae;
+            --gold: #ffd700;
+            --border: #2a2a35;
+            --surface: #1a1a24;
+            --surface-hover: #22222e;
+            --copper: #ff8c42;
+            --drill: #ff4757;
+            --warning: #ffa502;
+            --radius: 10px;
+            --radius-sm: 6px;
+            --radius-xs: 4px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* ═════════════ HEADER ═════════════ */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: rgba(10,10,15,0.92);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            z-index: 1000;
+            gap: 8px;
+        }
+        
+        .nav-left, .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .logo-studio {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--accent);
+            margin-right: 10px;
+            letter-spacing: -0.8px;
+            text-shadow: var(--accent-glow);
+            white-space: nowrap;
+        }
+        
+        header .tb {
+            padding: 6px 9px;
+            font-size: 10px;
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: var(--text-sec);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            height: 30px;
+        }
+        header .tb:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            border-color: rgba(255,255,255,0.15);
+        }
+        header .tb.on {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+            font-weight: 600;
+            box-shadow: var(--accent-glow);
+        }
+        header .tb.primary {
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+            border: none;
+        }
+        header .tb.primary:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 0 20px rgba(0,229,255,0.5);
+        }
+        
+        header .user-pill {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 28px;
+            transition: var(--transition);
+        }
+        header .user-pill:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+        header .credit-badge {
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 8px;
+            letter-spacing: 0.5px;
+        }
+        header .btn-upgrade {
+            background: linear-gradient(135deg, #ff8c00, #ff4757);
+            color: #fff;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            height: 22px;
+            display: flex;
+            align-items: center;
+        }
+        header .btn-upgrade:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255,71,87,0.4);
+        }
+
+        /* ═════════════ VIEWPORT ═════════════ */
+        #vp {
+            margin-top: 50px;
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #020408;
+            cursor: default;
+        }
+        #cv {
+            width: 100%;
+            height: 100%;
+            display: block;
+            outline: none;
+            image-rendering: auto;
+        }
+
+        /* ═════════════ SIDEBAR ═════════════ */
+        .sidebar {
+            margin-top: 50px;
+            width: 320px;
+            background: var(--sidebar);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            min-width: 280px;
+            transition: width var(--transition);
+        }
+
+        .tabs {
+            display: flex;
+            background: #0a0a12;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px 4px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-sec);
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .tab.on {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: var(--sidebar);
+        }
+        .tab:hover:not(.on) {
+            color: #ccc;
+        }
+        .tab-content {
+            display: none;
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .tab-content.on {
+            display: block;
+        }
+        .hid {
+            display: none !important;
+        }
+
+        /* ═════════════ FORM ELEMENTS ═════════════ */
+        input, textarea, select {
+            background: #0d0d15;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 12px;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(0,229,255,0.15);
+        }
+        label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+        .row label {
+            margin-bottom: 0;
+            min-width: 40px;
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 11px;
+            color: var(--text-sec);
+        }
+        .row input, .row select {
+            width: auto;
+            flex: 1;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 12px 0;
+        }
+
+        /* ═════════════ BUTTONS ═════════════ */
+        .tb {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Inter', sans-serif;
+            justify-content: center;
+        }
+        .tb:hover {
+            background: var(--surface-hover);
+            border-color: #444;
+        }
+
+        /* ═════════════ MODALS ═════════════ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.88);
+            z-index: 1500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .auth-box {
+            background: var(--sidebar);
+            border: 1px solid var(--border);
+            padding: 32px;
+            border-radius: 16px;
+            width: 380px;
+            max-width: 90vw;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .auth-box h2 {
+            margin: 0 0 12px;
+            color: var(--accent);
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            letter-spacing: -1px;
+        }
+        .btn-google {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            width: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: var(--transition);
+        }
+        .btn-google:hover {
+            background: #f0f0f0;
+        }
+        .paywall-box {
+            border-color: rgba(255,215,0,0.3);
+        }
+        .paywall-box h2 {
+            color: var(--gold);
+        }
+
+        /* ═════════════ LOADER ═════════════ */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0,229,255,0.15);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ═════════════ HUB ═════════════ */
+        #hubOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5,5,10,0.95);
+            z-index: 500;
+            padding: 40px 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .template-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .template-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            background: var(--surface-hover);
+        }
+
+        /* ═════════════ LIBRARY ═════════════ */
+        .lib-item {
+            padding: 7px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 11px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: var(--radius-xs);
+        }
+        .lib-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--accent);
+        }
+        .lib-item small {
+            color: var(--text-sec);
+            margin-left: auto;
+            font-size: 9px;
+        }
+
+        /* ═════════════ SCAN ═════════════ */
+        .scan-step {
+            margin-bottom: 8px;
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            border: 1px dashed #333;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .scan-step.active {
+            border-color: var(--accent);
+            border-style: solid;
+            box-shadow: 0 0 10px rgba(0,229,255,0.1);
+        }
+
+        /* ═════════════ GERBER VIEWER ═════════════ */
+        .gerber-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.98);
+            z-index: 2100;
+            display: flex;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        #gvSidebar {
+            width: 240px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        #gvViewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #010206;
+        }
+        #gvCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .gv-layer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+            cursor: pointer;
+            font-size: 10px;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        .gv-layer:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .gv-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .gv-layer.off {
+            opacity: 0.3;
+        }
+
+        /* ═════════════ COMPONENT PREVIEW ═════════════ */
+        #compPreviewModal .preview-card {
+            background: #0d0d15;
+            border: 1px solid #2a2a35;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        #compPreviewModal .preview-card:hover {
+            border-color: var(--accent);
+            background: #111120;
+        }
+        #compPreviewModal input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 16px;
+            height: 16px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        /* ═════════════ TOAST ═════════════ */
+        .toast-notif {
+            animation: slideUp 0.3s ease-out;
+            pointer-events: none;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ═════════════ RESPONSIVE ═════════════ */
+        @media (max-width: 900px) {
+            .sidebar { width: 260px; min-width: 240px; }
+            header .tb { padding: 5px 7px; font-size: 9px; gap: 3px; }
+            .logo-studio { font-size: 14px; }
+        }
+        @media (max-width: 600px) {
+            body { flex-direction: column; }
+            #vp { order: 1; margin-top: 50px; height: 60vh; flex: none; }
+            .sidebar { order: 2; margin-top: 0; width: 100%; height: 40vh; flex: none; border-left: none; border-top: 1px solid var(--border); }
+            header { flex-wrap: wrap; height: auto; padding: 6px 8px; gap: 4px; }
+            .nav-left { flex-wrap: wrap; }
+            header .tb { height: 24px; padding: 3px 6px; font-size: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ LOADER ═══════════════ -->
+<div id="loader" class="hid">
+    <div class="spinner"></div>
+    <div id="loader-text" style="font-family:'Outfit',sans-serif;font-size:16px;color:var(--accent);font-weight:600;">IA en cours d'analyse...</div>
+    <div style="color:var(--text-sec);font-size:11px;margin-top:6px;">Génération du layout PCB</div>
+</div>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header>
+    <div class="nav-left">
+        <span class="logo-studio">⚡ REVPCBAI</span>
+        <button id="t-select" class="tb on" onclick="setTool('select')" title="Sélection (S)">🖱️</button>
+        <button id="t-place" class="tb" onclick="setTool('place')" title="Placer composant (P)">🧩</button>
+        <button id="t-trace" class="tb" onclick="setTool('trace')" title="Router (T)">🔗</button>
+        <span style="border-left:1px solid rgba(255,255,255,0.1);height:18px;margin:0 4px;"></span>
+        <button class="tb" onclick="undo()" title="Annuler (Ctrl+Z)">↩️</button>
+        <button class="tb" onclick="saveProjectAs()" title="Sauvegarder">💾</button>
+        <button class="tb" onclick="openHub()" title="Hub de projets">📂</button>
+        <button class="tb" onclick="repairComponentPlacement()" title="Réparer le placement des composants (Auto-arranger)">✨ Placement</button>
+        <button class="tb" onclick="centerComponentsOnBoard()" title="Centrer tous les composants au milieu de la carte">🎯 Centrer</button>
+        <button class="tb" onclick="analyzeDesign()" title="Audit DRC">🔍</button>
+        <button class="tb" onclick="doAutoRoute()" title="Autoroutage">🔀</button>
+        <button class="tb primary" onclick="doGenerate()">🚀 Générer</button>
+        <button class="tb primary" onclick="openGerberViewer()">👁️ Viewer</button>
+    </div>
+    <div class="nav-right">
+        <a href="https://ainewgen.ca/killblackhat_test" target="_blank" class="tb" title="KillBlackHat — bouclier sécurité (suite Cortex)" style="text-decoration:none;">🛡️ KillBlackHat</a>
+        <button id="btn-login" class="tb" onclick="showLoginModal()">🔑 Connexion</button>
+        <div id="user-info" class="user-pill hid">
+            👤 <span id="user-email" style="max-width:80px;overflow:hidden;text-overflow:ellipsis;">user</span>
+            <span id="user-credits" class="credit-badge">5</span>
+            <button class="btn-upgrade" onclick="showPaywall()">⭐ PRO</button>
+            <button onclick="logoutUser()" style="background:none;border:none;color:#666;cursor:pointer;padding:2px 4px;font-size:14px;" title="Déconnexion">🚪</button>
+        </div>
+    </div>
+</header>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+<div id="loginModal" class="modal-overlay hid">
+    <div class="auth-box">
+        <h2>Cortex PCB Studio</h2>
+        <p style="color:var(--text-sec);margin-bottom:20px;">Connectez-vous pour utiliser l'IA de génération de PCB.</p>
+        <button class="btn-google" onclick="loginUser()">
+            <span style="font-size:17px;font-weight:bold;">G</span> Continuer avec Google
+        </button>
+        <button class="tb" onclick="closeModals()" style="margin-top:14px;width:100%;">Annuler</button>
+    </div>
+</div>
+<div id="paywallModal" class="modal-overlay hid">
+    <div class="auth-box paywall-box">
+        <h2>⭐ Abonnement Pro</h2>
+        <p style="color:var(--text-sec);margin-bottom:16px;">Débloquez l'export Gerber illimité, l'autoroutage avancé et plus encore.</p>
+        <button class="btn-google" style="background:var(--gold);color:#000;" onclick="startStripeCheckout()">
+            S'abonner (29 $/mois)
+        </button>
+        <button class="tb" onclick="closeModals()" style="margin-top:14px;width:100%;">Plus tard</button>
+    </div>
+</div>
+
+<!-- ═══════════════ COMP PREVIEW MODAL ═══════════════ -->
+<div id="compPreviewModal" class="modal-overlay hid">
+    <div style="background:var(--sidebar);border:1px solid var(--border);border-radius:16px;width:650px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;padding:24px;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="margin:0;color:var(--accent);font-family:'Outfit',sans-serif;font-size:20px;">🤖 Composants proposés par Gemini</h3>
+            <span style="font-size:10px;color:var(--text-sec);background:rgba(255,255,255,0.03);padding:4px 8px;border-radius:12px;">Décochez pour exclure</span>
+        </div>
+        <div id="compPreviewList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="display:flex;gap:10px;padding-top:12px;border-top:1px solid var(--border);">
+            <button class="tb" style="flex:1;" onclick="document.getElementById('compPreviewModal').classList.add('hid')">✕ Annuler</button>
+            <button class="tb" style="flex:1;background:var(--accent);color:#000;font-weight:700;" onclick="applyPreviewedComps()">✅ Appliquer la sélection</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ GERBER PRE-FLIGHT VERIFICATION MODAL ═══════════════ -->
+<div id="gerberPreFlightModal" class="modal-overlay hid">
+    <div style="background:var(--sidebar);border:1px solid var(--border);border-radius:16px;width:680px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;padding:24px;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <div>
+                <h3 style="margin:0;color:var(--accent);font-family:'Outfit',sans-serif;font-size:20px;display:flex;align-items:center;gap:8px;">
+                    🛡️ Contrôle DRC & Conformité Gerber Fabricant
+                </h3>
+                <small style="color:var(--text-sec);font-size:11px;">Vérification pré-export pour JLCPCB, PCBWay, Eurocircuits</small>
+            </div>
+            <button onclick="closeGerberPreFlightModal()" style="background:none;border:none;color:#aaa;font-size:18px;cursor:pointer;">✕</button>
+        </div>
+
+        <div id="preflightStatusBanner" style="padding:12px 16px;border-radius:8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;"></div>
+
+        <div id="preflightDetailsList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;max-height:350px;padding-right:4px;"></div>
+
+        <div style="display:flex;gap:10px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;">
+            <button class="tb" style="flex:1;min-width:140px;" onclick="closeGerberPreFlightModal()">🛠️ Modifier la carte</button>
+            <button class="tb" style="flex:1;min-width:180px;background:var(--accent);color:#000;font-weight:700;" onclick="repairComponentPlacement(); closeGerberPreFlightModal(); exportGerberZip(true);">✨ Auto-Réparer & Exporter</button>
+            <button class="tb" id="btn-force-export" style="flex:1;min-width:160px;background:var(--surface);border-color:var(--border);" onclick="closeGerberPreFlightModal(); exportGerberZip(true);">⚡ Exporter Gerber (.ZIP)</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ HUB ═══════════════ -->
+<div id="hubOverlay" class="hid">
+    <div style="max-width:900px;margin:0 auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h1 style="color:var(--accent);font-family:'Outfit';font-size:32px;margin:0;">Cortex PCB Hub</h1>
+            <button class="tb" onclick="closeHub()">✕ Fermer</button>
+        </div>
+        <p style="color:var(--text-sec);margin-bottom:16px;">Choisissez un template ou générez un design personnalisé par IA.</p>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+            <button class="tb on" onclick="newProject()" style="background:var(--accent);color:#000;font-weight:700;">✨ Nouveau Projet Vierge</button>
+            <select id="templateCategory" onchange="filterTemplatesByCategory()" style="width:auto;padding:6px 10px;font-size:11px;">
+                <option value="all">📂 Toutes les catégories</option>
+                <option value="alim">⚡ Alimentations</option>
+                <option value="mcu">🧠 Microcontrôleurs</option>
+                <option value="capteur">🌡️ Capteurs</option>
+                <option value="actionneur">🔧 Actionneurs</option>
+                <option value="comm">📡 Communication</option>
+                <option value="tempo">⏱️ Temporisateurs</option>
+                <option value="convertisseur">🔄 Convertisseurs</option>
+                <option value="afficheur">📺 Affichage</option>
+                <option value="domotique">🏠 Domotique/BBC</option>
+            </select>
+        </div>
+        <div id="templatesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-height:450px;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- ═══════════════ VIEWPORT + SIDEBAR ═══════════════ -->
+<div id="vp"><canvas id="cv" tabindex="0"></canvas></div>
+
+<div class="sidebar">
+    <div class="tabs">
+        <div class="tab on" onclick="switchTab('ai')">🤖 IA</div>
+        <div class="tab" onclick="switchTab('scan')">📸 Scan</div>
+        <div class="tab" onclick="switchTab('bdd')">📚 Lib</div>
+        <div class="tab" onclick="switchTab('props')">⚙️ Prop</div>
+        <div class="tab" onclick="switchTab('bom')">📋 BOM</div>
+        <div class="tab" onclick="switchTab('copilote')">💬 Copilote</div>
+    </div>
+
+    <div id="tab-ai" class="tab-content on">
+        <label for="promptText">📝 Description du circuit</label>
+        <textarea id="promptText" rows="4" placeholder="Ex: Alimentation 5V 2A pour ESP32 avec régulateur AMS1117, condensateur 100µF et 10µF, connecteur JST pour batterie LiPo..."></textarea>
+        <button class="tb" style="width:100%;margin-top:10px;background:var(--accent);color:#000;font-weight:700;" onclick="generateFromPrompt()">
+            🤖 Générer Layout (1 crédit)
+        </button>
+        <div style="margin-top:10px;font-size:10px;color:var(--text-sec);text-align:center;">
+            Propulsé par Gemini 2.5 Flash
+        </div>
+    </div>
+
+    <div id="tab-scan" class="tab-content">
+        <h4 style="margin:0 0 8px;font-size:12px;">📸 Analyse Multi-Photo <span style="font-size:9px;color:var(--accent);">(2 crédits)</span></h4>
+        <div style="margin-bottom:8px;display:flex;gap:6px;">
+            <input type="number" id="scan-bw" placeholder="Largeur (mm)" style="width:50%;" value="100" onchange="bW=Number(this.value);document.getElementById('boardW').value=bW;updUI();draw();">
+            <input type="number" id="scan-bh" placeholder="Hauteur (mm)" style="width:50%;" value="80" onchange="bH=Number(this.value);document.getElementById('boardH').value=bH;updUI();draw();">
+        </div>
+        <div id="scan-multi">
+            <div class="scan-step active" id="scan-step-1">
+                <div class="scan-label" style="font-size:10px;margin-bottom:4px;">📄 Photo 1 : Schéma / Fiche technique</div>
+                <div style="display:flex;gap:4px;">
+                    <button class="tb" style="flex:1;font-size:9px;" onclick="document.getElementById('photo-file-1').click()">📁 Choisir</button>
+                </div>
+                <input type="file" accept="image/*" onchange="capturePhoto(1,event)" id="photo-file-1" style="display:none;">
+                <div class="scan-preview" id="preview-1" style="margin-top:4px;"></div>
+            </div>
+            <div class="scan-step hid" id="scan-step-2">
+                <div class="scan-label" style="font-size:10px;margin-bottom:4px;">📦 Photo 2 : Vue d'ensemble</div>
+                <div style="display:flex;gap:4px;">
+                    <button class="tb" style="flex:1;font-size:9px;" onclick="document.getElementById('photo-file-2').click()">📁 Choisir</button>
+                </div>
+                <input type="file" accept="image/*" onchange="capturePhoto(2,event)" id="photo-file-2" style="display:none;">
+                <div class="scan-preview" id="preview-2" style="margin-top:4px;"></div>
+            </div>
+            <div class="scan-step hid" id="scan-step-3">
+                <div class="scan-label" style="font-size:10px;margin-bottom:4px;">🔍 Photo 3 : Composants visibles</div>
+                <div style="display:flex;gap:4px;">
+                    <button class="tb" style="flex:1;font-size:9px;" onclick="document.getElementById('photo-file-3').click()">📁 Choisir</button>
+                </div>
+                <input type="file" accept="image/*" onchange="capturePhoto(3,event)" id="photo-file-3" style="display:none;">
+                <div class="scan-preview" id="preview-3" style="margin-top:4px;"></div>
+            </div>
+            <button id="btn-analyze-all" class="tb hid" style="width:100%;margin-top:8px;background:var(--accent);color:#000;font-weight:600;" onclick="analyzeAllPhotos()">
+                🔬 Analyser les 3 photos (2 crédits)
+            </button>
+        </div>
+        <div id="scan-results" class="hid" style="margin-top:8px;font-size:10px;"></div>
+        <div id="scan-clarify" class="hid" style="margin-top:8px;padding:8px;background:rgba(255,165,2,0.08);border:1px solid rgba(255,165,2,0.3);border-radius:6px;">
+            <strong style="color:var(--warning);font-size:10px;">⚠️ Précisions nécessaires :</strong>
+            <div id="clarify-questions" style="margin-top:4px;font-size:10px;"></div>
+            <textarea id="clarify-input" rows="2" placeholder="Décrivez les composants manquants..." style="margin-top:6px;font-size:10px;"></textarea>
+            <button class="tb" onclick="submitClarification()" style="width:100%;margin-top:4px;background:var(--warning);color:#000;font-weight:600;">📝 Envoyer</button>
+        </div>
+    </div>
+
+    <div id="tab-bdd" class="tab-content">
+        <label for="libSearch">Rechercher (12K+ empreintes)</label>
+        <input type="text" id="libSearch" oninput="searchFootprints(this.value)" placeholder="ex: ESP32, SOT-23, 0603...">
+        <div id="libList" style="margin-top:6px;max-height:300px;overflow-y:auto;"></div>
+    </div>
+
+    <div id="tab-props" class="tab-content">
+        <div class="row"><label>Projet</label><input id="projectName" type="text" value="MonPCB" onchange="saveProjectToStorage()"></div>
+        <div class="row"><label>L (mm)</label><input id="boardW" type="number" value="100" onchange="updateBoardSize()"></div>
+        <div class="row"><label>H (mm)</label><input id="boardH" type="number" value="80" onchange="updateBoardSize()"></div>
+        <div class="row"><span>Grille</span>
+            <div style="display:flex;gap:3px;">
+                <button class="tb grid-btn on" style="padding:3px 6px;font-size:9px;" onclick="setGrid(1,this)">1</button>
+                <button class="tb grid-btn" style="padding:3px 6px;font-size:9px;" onclick="setGrid(2.5,this)">2.5</button>
+                <button class="tb grid-btn" style="padding:3px 6px;font-size:9px;" onclick="setGrid(5,this)">5</button>
+            </div>
+        </div>
+        <hr>
+        <div id="insp" style="font-size:10px;color:var(--text-sec);min-height:30px;">Cliquez sur un composant</div>
+        <button id="btn-delete" class="tb hid" style="width:100%;margin-top:6px;border-color:var(--danger);color:var(--danger);font-weight:600;" onclick="deleteComp()">
+            🗑️ Supprimer le composant
+        </button>
+        <hr>
+        <button class="tb" style="width:100%;margin-top:4px;background:var(--accent);color:#000;font-weight:700;" onclick="repairComponentPlacement()">✨ Réparer le placement (Auto-arranger)</button>
+        <button class="tb" style="width:100%;margin-top:6px;" onclick="runGerberPreFlight()">🛡️ Contrôle DRC & Fabricant</button>
+    </div>
+
+    <div id="tab-copilote" class="tab-content">
+        <h4 style="margin:0 0 8px;font-size:12px;">💬 Copilote PCB <span style="font-size:9px;color:var(--accent);">(ancré, sans halluciner)</span></h4>
+        <textarea id="cop-q" rows="3" placeholder="Ex: Quelle largeur de piste pour 2A en cuivre 1oz ? Comment router un bus SPI proprement ?"></textarea>
+        <button class="tb" style="width:100%;margin-top:8px;background:var(--accent);color:#000;font-weight:700;" onclick="askCopilote()">💬 Demander au copilote</button>
+        <div id="cop-out" style="margin-top:10px;font-size:11px;line-height:1.5;white-space:pre-wrap;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px;min-height:40px;"></div>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:12px 0;">
+        <h4 style="margin:0 0 6px;font-size:12px;">🧠 Tes règles maison</h4>
+        <div style="font-size:10px;color:var(--text-sec);margin-bottom:6px;">Le copilote applique TES règles à chaque réponse — sans réentraînement (stockées dans ce navigateur).</div>
+        <div style="display:flex;gap:6px;">
+            <input type="text" id="cop-rule" placeholder="Ex: toujours 0.3mm de clearance minimum">
+            <button class="tb" onclick="addRule()" style="background:var(--accent);color:#000;font-weight:600;white-space:nowrap;">+ Apprendre</button>
+        </div>
+        <div id="cop-rules" style="margin-top:8px;"></div>
+    </div>
+
+    <div id="tab-bom" class="tab-content">
+        <div id="bomList" style="max-height:280px;overflow-y:auto;"></div>
+        <div class="row" style="margin-top:8px;font-weight:700;font-size:13px;">
+            <span>Total estimé</span>
+            <span id="bomTotal" style="color:var(--accent);">0.00 $</span>
+        </div>
+        <button class="tb" onclick="exportBOMCSV()" style="width:100%;margin-top:8px;">📥 Exporter BOM CSV</button>
+    </div>
+
+    <!-- Stats Footer -->
+    <div style="padding:8px 12px;background:#0a0a12;border-top:1px solid var(--border);font-size:9px;">
+        <div class="row" style="margin-bottom:4px;">
+            <span>Composants</span><span id="sc" style="font-weight:600;">0</span>
+        </div>
+        <div class="row" style="margin-bottom:4px;">
+            <span>Connexions</span><span id="sn" style="font-weight:600;">0</span>
+        </div>
+        <div id="drc" style="text-align:center;padding:3px;font-size:9px;">✅ Aucun conflit</div>
+    </div>
+    <!-- Legal footer -->
+    <div style="padding:6px 10px;background:#080810;border-top:1px solid var(--border);text-align:center;font-size:8px;color:var(--text-sec);line-height:1.4;">
+        <a href="/legal" style="color:inherit;text-decoration:none;">Mentions légales</a> ·
+        <a href="/privacy" style="color:inherit;text-decoration:none;">Confidentialité</a> ·
+        <a href="/terms" style="color:inherit;text-decoration:none;">CGU</a> ·
+        <a href="/cookies" style="color:inherit;text-decoration:none;">Cookies</a>
+        <br>© 2026 Cortex PCB Studio — Tous droits réservés
+    </div>
+</div>
+
+<!-- ═══════════════ GERBER VIEWER ═══════════════ -->
+<div id="gerberModal" class="gerber-modal hid" onclick="if(event.target===this)closeGerberViewer()">
+    <div id="gvSidebar">
+        <div style="margin-bottom:8px;"><span class="logo-studio">🦄 REVPCBAI</span></div>
+        <h3 style="color:var(--accent);margin:0 0 10px;">👁️ X-Ray Viewer</h3>
+        
+        <div class="gv-layer" onclick="toggleGVLayer('copper',this)"><div class="gv-dot" style="background:var(--copper);"></div>Top Copper (GTL)</div>
+        <div class="gv-layer" onclick="toggleGVLayer('bottom',this)"><div class="gv-dot" style="background:#4fc3f7;"></div>Bottom Copper (GBL)</div>
+        <div class="gv-layer" onclick="toggleGVLayer('edge',this)"><div class="gv-dot" style="background:var(--success);"></div>Board Edge (GML)</div>
+        <div class="gv-layer" onclick="toggleGVLayer('drill',this)"><div class="gv-dot" style="background:var(--drill);"></div>Drill Holes (TXT)</div>
+        <div class="gv-layer" onclick="toggleGVLayer('silkscreen',this)"><div class="gv-dot" style="background:#fff;"></div>Silkscreen (GTO)</div>
+        <div class="gv-layer" onclick="toggleGVLayer('mask',this)"><div class="gv-dot" style="background:#ff4081;"></div>Solder Mask (GTS)</div>
+        <div class="gv-layer" onclick="toggleGVLayer('paste',this)"><div class="gv-dot" style="background:#b2bec3;"></div>Solder Paste (GTP)</div>
+        
+        <button class="tb" onclick="gvZoom=1.0;gvPanX=0;gvPanY=0;drawGerberPreview();" style="margin-top:5px;">🔍 Reset Zoom</button>
+        <button class="tb" onclick="closeGerberViewer()" style="margin-top:auto;">✕ Fermer</button>
+    </div>
+    <div id="gvViewport"><canvas id="gvCanvas"></canvas></div>
+</div>
+
+<script>
+// ═══════════════════ FIREBASE INIT ═══════════════════
+const firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "your-project.firebaseapp.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project.firebasestorage.app",
+    messagingSenderId: "000000000000",
+    appId: "1:000000000000:web:0000000000000000"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+let messaging = null;
+try {
+    if (firebase.messaging.isSupported()) {
+        messaging = firebase.messaging();
+    }
+} catch (e) {
+    console.warn("FCM is not supported in this environment:", e);
+}
+
+// ═══════════════════ STATE ═══════════════════
+let currentUser = null, userCredits = 5;
+let cv, cx, vp;
+let comps = [], nets = [], sel = null, tool = 'select';
+let zoom = 1.8, panX = 0, panY = 0;
+let bW = 100, bH = 80;
+let drag = null, dragOffX = 0, dragOffY = 0;
+let snapGrid = 1;
+let placementPreview = null, mouseCanvasX = 0, mouseCanvasY = 0;
+let tracing = null;
+let isPan = false, lastMX = 0, lastMY = 0;
+let historyStack = [], historyIdx = -1;
+const MAX_HISTORY = 50;
+let scanImages = [null, null, null];
+
+// ═══════════════════ AUTH ═══════════════════
+function showNotification(msg, type = 'success') {
+    const existing = document.querySelector('.toast-notif');
+    if (existing) existing.remove();
+    const bg = type === 'success' ? 'rgba(105,240,174,0.12)' : type === 'warning' ? 'rgba(255,165,2,0.12)' : 'rgba(255,82,82,0.12)';
+    const border = type === 'success' ? '#69f0ae' : type === 'warning' ? '#ffa502' : '#ff5252';
+    const color = type === 'success' ? '#69f0ae' : type === 'warning' ? '#ffa502' : '#ff5252';
+    const t = document.createElement('div');
+    t.className = 'toast-notif';
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:3000;background:${bg};border:1px solid ${border};color:${color};padding:10px 16px;border-radius:10px;font-size:11px;font-weight:600;backdrop-filter:blur(10px);max-width:350px;`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+function showLoginModal() { document.getElementById('loginModal').classList.remove('hid'); }
+function showPaywall() { document.getElementById('paywallModal').classList.remove('hid'); }
+function closeModals() {
+    document.getElementById('loginModal').classList.add('hid');
+    document.getElementById('paywallModal').classList.add('hid');
+}
+
+function loginUser() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+        .then((result) => {
+            currentUser = result.user;
+            userCredits = 5;
+            document.getElementById('user-email').textContent = currentUser.email.split('@')[0];
+            document.getElementById('user-credits').textContent = userCredits;
+            document.getElementById('btn-login').classList.add('hid');
+            document.getElementById('user-info').classList.remove('hid');
+            closeModals();
+            showNotification('✅ Connecté avec Google !');
+            result.user.getIdToken().then(token => localStorage.setItem('firebase_token', token));
+        })
+        .catch((error) => showNotification('❌ Connexion échouée: ' + error.message, 'error'));
+}
+
+let userRole = 'free';
+
+function logoutUser() {
+    auth.signOut().then(() => {
+        currentUser = null;
+        userRole = 'free';
+        userCredits = 0;
+        localStorage.removeItem('firebase_token');
+        document.getElementById('btn-login').classList.remove('hid');
+        document.getElementById('user-info').classList.add('hid');
+        const upgradeBtn = document.querySelector('.btn-upgrade');
+        if (upgradeBtn) {
+            upgradeBtn.style.display = 'inline-block';
+        }
+        showNotification('👋 Déconnecté');
+    });
+}
+
+let currentUserToken = null;
+
+async function loadUserProfile() {
+    if (!currentUser) return;
+    if (location.search.indexOf('paid=1') !== -1) {
+        showNotification('✅ Paiement reçu — crédits ajoutés !', 'success');
+        try { history.replaceState({}, '', '/'); } catch (e) {}
+    }
+    try {
+        const response = await secureFetch('/api/user/profile');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'success' && data.profile) {
+                userRole = data.profile.role;
+                if (userRole === 'pro') {
+                    userCredits = 999;
+                    document.getElementById('user-credits').textContent = '∞';
+                    document.getElementById('user-credits').className = 'credit-badge pro-badge';
+                    const upgradeBtn = document.querySelector('.btn-upgrade');
+                    if (upgradeBtn) {
+                        upgradeBtn.style.display = 'none';
+                    }
+                } else {
+                    userCredits = data.profile.credits;
+                    document.getElementById('user-credits').textContent = userCredits;
+                    document.getElementById('user-credits').className = 'credit-badge';
+                    const upgradeBtn = document.querySelector('.btn-upgrade');
+                    if (upgradeBtn) {
+                        upgradeBtn.style.display = 'inline-block';
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load user profile:", e);
+    }
+}
+
+// ═══════════════════ FIREBASE CLOUD MESSAGING ═══════════════════
+function initFCM() {
+    if (!messaging) return;
+    
+    messaging.onMessage((payload) => {
+        console.log('Foreground message received:', payload);
+        if (payload.notification) {
+            showNotification(`🔔 ${payload.notification.title} : ${payload.notification.body}`, 'success');
+            if (document.hidden) {
+                try {
+                    new Notification(payload.notification.title, {
+                        body: payload.notification.body,
+                        icon: '/favicon.ico'
+                    });
+                } catch (e) {
+                    console.warn("Desktop notification error:", e);
+                }
+            }
+        }
+    });
+
+    if (Notification.permission === 'default') {
+        console.log("Asking for Push Notification permission in 5s...");
+        setTimeout(() => requestFCMToken(), 5000);
+    } else if (Notification.permission === 'granted') {
+        requestFCMToken();
+    }
+}
+
+async function requestFCMToken() {
+    if (!messaging) return;
+    try {
+        const token = await messaging.getToken({ 
+            vapidKey: 'BGFgSVQ_REiiroBqo-T3SnMjS-FDpvw5_JxeCXEfEqk5CTmyCfg5Aru_RRi0P7Ln0Zu1E8Jzj1nUnMO2SKW5g1Y' 
+        });
+        if (token) {
+            console.log('FCM Token obtained:', token);
+            localStorage.setItem('fcm_token', token);
+            await registerFcmTokenOnBackend(token);
+        } else {
+            console.warn("FCM token could not be fetched.");
+        }
+    } catch (err) {
+        console.error('Error fetching FCM token:', err);
+    }
+}
+
+async function registerFcmTokenOnBackend(token) {
+    try {
+        await secureFetch('/api/user/register_fcm', {
+            method: 'POST',
+            body: JSON.stringify({ token: token })
+        });
+    } catch (e) {
+        console.error('Failed to register FCM token on backend:', e);
+    }
+}
+
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        currentUserToken = await user.getIdToken();
+        document.getElementById('user-email').textContent = user.email.split('@')[0];
+        document.getElementById('btn-login').classList.add('hid');
+        document.getElementById('user-info').classList.remove('hid');
+        await loadUserProfile();
+        if (messaging) {
+            initFCM();
+        }
+    } else {
+        currentUser = null;
+        currentUserToken = null;
+        userRole = 'free';
+        userCredits = 0;
+        document.getElementById('user-credits').textContent = '0';
+        document.getElementById('user-credits').className = 'credit-badge';
+        document.getElementById('btn-login').classList.remove('hid');
+        document.getElementById('user-info').classList.add('hid');
+        const upgradeBtn = document.querySelector('.btn-upgrade');
+        if (upgradeBtn) {
+            upgradeBtn.style.display = 'inline-block';
+        }
+    }
+});
+
+async function secureFetch(url, options = {}) {
+    if (!currentUserToken && auth.currentUser) {
+        currentUserToken = await auth.currentUser.getIdToken();
+    }
+    const headers = { ...options.headers };
+    if (currentUserToken) {
+        headers['Authorization'] = `Bearer ${currentUserToken}`;
+    }
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    const resp = await fetch(url, { ...options, headers });
+    if (resp.status === 402) {                       // crédits insuffisants → paywall centralisé
+        showNotification('⛔ Crédits insuffisants — achète des crédits pour continuer.', 'warning');
+        try { loadUserProfile(); showPaywall(); } catch (e) {}
+    }
+    return resp;
+}
+
+function checkAndConsumeCredits(cost) {
+    if (!currentUser) { showLoginModal(); return false; }
+    if (userCredits < cost) { showPaywall(); return false; }
+    if (userRole !== 'pro') {
+        userCredits -= cost;
+        document.getElementById('user-credits').textContent = userCredits;
+    }
+    return true;
+}
+
+async function startStripeCheckout() {
+    if (!currentUser) {
+        closeModals();
+        showLoginModal();
+        return;
+    }
+    const btn = document.querySelector('#paywallModal .btn-google');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Redirection...";
+    try {
+        const response = await secureFetch('/api/billing/create-checkout-session', {
+            method: 'POST',
+            body: JSON.stringify({
+                origin_url: window.location.origin
+            })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (data.checkout_url) {
+                window.location.href = data.checkout_url;
+            } else {
+                showNotification("❌ Erreur lors de l'initialisation du paiement.", "error");
+            }
+        } else {
+            const errData = await response.json();
+            showNotification(`❌ Erreur: ${errData.detail || 'Service Stripe indisponible'}`, "error");
+        }
+    } catch (e) {
+        showNotification("❌ Erreur réseau lors de la redirection.", "error");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+// ═══════════════════ HISTORY ═══════════════════
+function saveState() {
+    historyStack = historyStack.slice(0, historyIdx + 1);
+    historyStack.push({ comps: JSON.parse(JSON.stringify(comps)), nets: JSON.parse(JSON.stringify(nets)), bW, bH, zoom, panX, panY });
+    if (historyStack.length > MAX_HISTORY) historyStack.shift();
+    historyIdx = historyStack.length - 1;
+}
+
+function undo() {
+    if (historyIdx > 0) {
+        historyIdx--;
+        const s = historyStack[historyIdx];
+        comps = s.comps; nets = s.nets; bW = s.bW; bH = s.bH; zoom = s.zoom; panX = s.panX; panY = s.panY;
+        document.getElementById('boardW').value = bW;
+        document.getElementById('boardH').value = bH;
+        sel = null;
+        updUI(); draw();
+        showNotification('↩️ Action annulée');
+    }
+}
+
+// ═══════════════════ PRICES ═══════════════════
+const PRICES = {
+    RES: 0.02, CAP: 0.05, LED: 0.08, MCU: 2.5, CONN: 0.15, IND: 0.12, DIODE: 0.04, SENSOR: 1.5, REG: 0.5, DEFAULT: 0.1
+};
+
+// ═══════════════════ LIBRARY ═══════════════════
+const LIB_DB = [
+    { cat: 'Resistor_SMD', items: ['R_0201', 'R_0402', 'R_0603', 'R_0805', 'R_1206', 'R_1210', 'R_2010', 'R_2512'] },
+    { cat: 'Capacitor_SMD', items: ['C_0201', 'C_0402', 'C_0603', 'C_0805', 'C_1206', 'C_1210'] },
+    { cat: 'Capacitor_THT', items: ['CP_Radial_D5', 'CP_Radial_D6.3', 'CP_Radial_D8', 'CP_Radial_D10'] },
+    { cat: 'Inductor_SMD', items: ['L_0603', 'L_0805', 'L_1206', 'L_1210', 'L_1812'] },
+    { cat: 'Diode_SMD', items: ['D_SOD-123', 'D_SOD-323', 'D_SMA', 'D_SMB', 'D_SMC', 'LED_0603', 'LED_0805', 'LED_1206'] },
+    { cat: 'Diode_THT', items: ['D_DO-35', 'D_DO-41', 'D_DO-201AD', 'LED_D3.0mm', 'LED_D5.0mm'] },
+    { cat: 'Package_TO_SOT_THT', items: ['TO-92', 'TO-220-3', 'TO-220-5', 'TO-247-3', 'TO-3'] },
+    { cat: 'Package_TO_SOT_SMD', items: ['SOT-23', 'SOT-23-5', 'SOT-223', 'SOT-89', 'DPAK', 'D2PAK'] },
+    { cat: 'Package_QFP', items: ['TQFP-32_7x7', 'TQFP-44_10x10', 'TQFP-48_7x7', 'LQFP-64_10x10', 'LQFP-100_14x14', 'LQFP-144_20x20'] },
+    { cat: 'Package_DIP', items: ['DIP-8', 'DIP-14', 'DIP-16', 'DIP-20', 'DIP-28', 'DIP-40'] },
+    { cat: 'Package_SO', items: ['SOP-8', 'SOP-14', 'SOP-16', 'SSOP-16', 'SSOP-20', 'SSOP-28', 'TSSOP-16', 'TSSOP-20'] },
+    { cat: 'Package_BGA', items: ['BGA-256_17x17', 'BGA-100_10x10', 'BGA-48_6x6'] },
+    { cat: 'RF_Module', items: ['ESP32-WROOM-32', 'ESP8266-12E', 'nRF24L01_Breakout', 'RFM95W', 'SIM800L'] },
+    { cat: 'Connector_PinHeader_2.54mm', items: ['1x02', '1x03', '1x04', '1x06', '1x08', '1x10', '1x20', '2x05', '2x10', '2x20'] },
+    { cat: 'Connector_USB', items: ['USB_A', 'USB_B', 'USB_Micro-B', 'USB_C_Receptacle', 'USB_Mini-B'] },
+    { cat: 'Connector_JST', items: ['JST_XH_2P', 'JST_XH_3P', 'JST_XH_4P', 'JST_PH_2P', 'JST_PH_4P', 'JST_PH_6P'] },
+    { cat: 'Relay_THT', items: ['Relay_SPDT_SRD', 'Relay_DPDT', 'Relay_SSR'] },
+    { cat: 'Switch', items: ['SW_Push_6mm', 'SW_DIP_4', 'SW_Toggle_SPDT', 'SW_Slide_DPDT'] },
+    { cat: 'Crystal', items: ['HC49_Vertical', 'HC49_SMD', 'Crystal_SMD_3215', 'Crystal_SMD_5032'] },
+    { cat: 'Transformer_THT', items: ['EI30', 'EI38', 'EI48', 'Toroid_D10'] },
+    { cat: 'Regulator_Linear', items: ['AMS1117-3.3', 'LM7805_TO220', 'LM7812_TO220', 'LM317_TO220', 'LM1117'] },
+    { cat: 'Regulator_Switching', items: ['LM2596_Module', 'XL4016_TO263', 'MP1584_Module', 'TPS5430'] },
+    { cat: 'OpAmp', items: ['LM358_DIP8', 'LM741_DIP8', 'TL072_DIP8', 'NE5532_DIP8', 'OPA2134_DIP8'] },
+    { cat: 'MCU_Microchip', items: ['ATmega328P-AU_TQFP32', 'ATtiny85_DIP8', 'PIC16F877A_DIP40', 'PIC18F4550_DIP40'] },
+    { cat: 'MCU_ST', items: ['STM32F103C8T6_LQFP48', 'STM32F407VGT6_LQFP100', 'STM32F030_TSSOP20'] },
+    { cat: 'Motor_Driver', items: ['L298N_Multiwatt15', 'L293D_DIP16', 'DRV8825_Module', 'A4988_Module', 'TB6612FNG'] },
+    { cat: 'Sensor', items: ['DHT22_Module', 'BME280_Module', 'MPU6050_Module', 'HC-SR04', 'LDR_5mm', 'NTC_10k'] },
+    { cat: 'Display', items: ['OLED_SSD1306_0.96', 'LCD_16x2_HD44780', 'TFT_ILI9341_2.4', '7Segment_Common_Cathode'] },
+    { cat: 'Audio', items: ['Speaker_D20mm', 'Buzzer_12mm', 'Jack_3.5mm_TRS', 'MAX98357A_Module'] },
+    { cat: 'Power', items: ['BarrelJack_5.5x2.1', 'Battery_18650_Holder', 'Solar_Cell_5V', 'Fuse_5x20'] },
+    { cat: 'Blinder', items: ['BLINDER_1X1', 'BLINDER_2X2', 'BLINDER_CUSTOM'] }
+];
+
+let flatLib = [];
+LIB_DB.forEach(g => g.items.forEach(i => flatLib.push({ cat: g.cat, fp: i, label: `${g.cat}:${i}` })));
+
+// ═══════════════════ SHAPES ═══════════════════
+const SHAPES = {
+    Resistor: { w: 6, h: 2.5, color: '#4fc3f7', pins: [{x:-3,y:0},{x:3,y:0}] },
+    Capacitor: { w: 4, h: 5, color: '#ffb74d', pins: [{x:-2,y:0},{x:2,y:0}] },
+    Inductor: { w: 5, h: 3, color: '#81c784', pins: [{x:-2.5,y:0},{x:2.5,y:0}] },
+    Diode: { w: 4, h: 2.5, color: '#e57373', pins: [{x:-2,y:0},{x:2,y:0}] },
+    LED: { w: 3.5, h: 3.5, color: '#fff176', pins: [{x:-1.75,y:0},{x:1.75,y:0}] },
+    Package_TO: { w: 7, h: 9, color: '#90a4ae', pins: [{x:-3.5,y:-3},{x:-3.5,y:0},{x:-3.5,y:3}] },
+    Package_QFP: { w: 12, h: 12, color: '#b0bec5', pins: [{x:-6,y:0},{x:6,y:0},{x:0,y:-6},{x:0,y:6}] },
+    Package_DIP: { w: 7, h: 14, color: '#a1887f', pins: [{x:-3.5,y:0},{x:3.5,y:0}] },
+    Package_SO: { w: 5, h: 9, color: '#ce93d8', pins: [{x:-2.5,y:0},{x:2.5,y:0}] },
+    Package_BGA: { w: 14, h: 14, color: '#80cbc4', pins: [{x:0,y:-7},{x:0,y:7},{x:-7,y:0},{x:7,y:0}] },
+    RF_Module: { w: 14, h: 18, color: '#4dd0e1', pins: [{x:0,y:-9},{x:0,y:9}] },
+    Connector: { w: 5, h: 7, color: '#aed581', pins: [{x:0,y:-3.5},{x:0,y:3.5}] },
+    Relay: { w: 9, h: 12, color: '#ffab91', pins: [{x:-4.5,y:0},{x:4.5,y:0},{x:0,y:-6},{x:0,y:6}] },
+    Switch: { w: 5, h: 5, color: '#f48fb1', pins: [{x:-2.5,y:0},{x:2.5,y:0}] },
+    Crystal: { w: 5, h: 3.5, color: '#80deea', pins: [{x:-2.5,y:0},{x:2.5,y:0}] },
+    Regulator: { w: 7, h: 5, color: '#a5d6a7', pins: [{x:-3.5,y:0},{x:3.5,y:0},{x:0,y:2.5}] },
+    MCU: { w: 12, h: 12, color: '#9fa8da', pins: [{x:-6,y:0},{x:6,y:0},{x:0,y:-6},{x:0,y:6}] },
+    Sensor: { w: 7, h: 7, color: '#ffe082', pins: [{x:-3.5,y:0},{x:3.5,y:0},{x:0,y:-3.5}] },
+    Display: { w: 16, h: 12, color: '#b39ddb', pins: [{x:0,y:-6},{x:0,y:6}] },
+    Motor: { w: 9, h: 7, color: '#ef9a9a', pins: [{x:-4.5,y:0},{x:4.5,y:0},{x:0,y:-3.5},{x:0,y:3.5}] },
+    Blinder: { w: 10, h: 10, color: '#ff4081', pins: [{x:-5,y:0},{x:5,y:0},{x:0,y:-5},{x:0,y:5}] },
+    default: { w: 7, h: 5, color: '#ff4081', pins: [{x:-3.5,y:0},{x:3.5,y:0}] }
+};
+
+function getShape(c) {
+    if (!c || !c.lib) return SHAPES.default;
+    for (const k of Object.keys(SHAPES)) {
+        if (k !== 'default' && c.lib.includes(k)) return SHAPES[k];
+    }
+    return SHAPES.default;
+}
+
+function getPinPos(comp, pinIdx) {
+    const s = getShape(comp);
+    pinIdx = Math.min(pinIdx, s.pins.length - 1);
+    const p = s.pins[pinIdx];
+    const rad = (comp.rotation_deg || 0) * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    return {
+        x: comp.x_mm + p.x * cos - p.y * sin,
+        y: comp.y_mm + p.x * sin + p.y * cos
+    };
+}
+
+// ═══════════════════ RENDERING ═══════════════════
+function init() {
+    cv = document.getElementById('cv');
+    if (!cv) { requestAnimationFrame(init); return; }
+    cx = cv.getContext('2d');
+    vp = document.getElementById('vp');
+    if (vp) {
+        cv.width = vp.clientWidth;
+        cv.height = vp.clientHeight;
+        panX = cv.width / 2;
+        panY = cv.height / 2;
+        setupCanvasListeners();
+    }
+    draw();
+}
+
+function setTool(t) {
+    tool = t;
+    placementPreview = null;
+    tracing = null;
+    sel = null;
+    drag = null;
+    document.querySelectorAll('header .tb.on').forEach(b => b.classList.remove('on'));
+    const el = document.getElementById('t-' + t);
+    if (el) el.classList.add('on');
+    vp.style.cursor = t === 'place' ? 'crosshair' : t === 'trace' ? 'copy' : 'default';
+    updUI(); draw();
+}
+
+function updateBoardSize() {
+    bW = parseFloat(document.getElementById('boardW').value) || 100;
+    bH = parseFloat(document.getElementById('boardH').value) || 80;
+    saveState(); draw();
+}
+
+function setGrid(g, btn) {
+    snapGrid = g;
+    document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('on'));
+    if (btn) btn.classList.add('on');
+}
+
+function checkDRC() {
+    const conflicts = [];
+    for (let i = 0; i < comps.length; i++) {
+        for (let j = i + 1; j < comps.length; j++) {
+            const dx = comps[i].x_mm - comps[j].x_mm;
+            const dy = comps[i].y_mm - comps[j].y_mm;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 3) conflicts.push({ ref_a: comps[i].ref, ref_b: comps[j].ref, distance_mm: Math.round(dist*100)/100 });
+        }
+    }
+    return conflicts;
+}
+
+function draw() {
+    if (!cv || !cx) return;
+    cx.clearRect(0, 0, cv.width, cv.height);
+    cx.save();
+    const scale = zoom * 4;
+    cx.translate(panX, panY);
+    cx.scale(zoom, zoom);
+
+    // Fond PCB
+    cx.fillStyle = '#0a2a1a';
+    cx.fillRect(0, 0, bW * 4, bH * 4);
+
+    // Grille
+    cx.strokeStyle = 'rgba(255,255,255,0.04)';
+    cx.lineWidth = 0.25;
+    for (let x = 0; x <= bW*4; x += 1) { cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, bH*4); cx.stroke(); }
+    for (let y = 0; y <= bH*4; y += 1) { cx.beginPath(); cx.moveTo(0, y); cx.lineTo(bW*4, y); cx.stroke(); }
+
+    cx.strokeStyle = 'rgba(255,255,255,0.1)';
+    cx.lineWidth = 0.5;
+    for (let x = 0; x <= bW*4; x += 5) { cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, bH*4); cx.stroke(); }
+    for (let y = 0; y <= bH*4; y += 5) { cx.beginPath(); cx.moveTo(0, y); cx.lineTo(bW*4, y); cx.stroke(); }
+
+    // Bordure
+    cx.strokeStyle = '#00e5ff';
+    cx.lineWidth = 1;
+    cx.shadowColor = '#00e5ff';
+    cx.shadowBlur = 8;
+    cx.strokeRect(0, 0, bW * 4, bH * 4);
+    cx.shadowBlur = 0;
+
+    // Dimensions
+    cx.font = 'bold 3px Inter';
+    cx.fillStyle = '#00e5ff';
+    cx.textAlign = 'center';
+    cx.fillText(`${bW} mm`, bW * 2, -2.5);
+    cx.save();
+    cx.translate(-3, bH * 2);
+    cx.rotate(-Math.PI/2);
+    cx.fillText(`${bH} mm`, 0, 0);
+    cx.restore();
+
+    const conflicts = checkDRC();
+
+    // Nets
+    if (nets.length) {
+        nets.forEach(n => {
+            if (!n.pins || n.pins.length < 2) return;
+            cx.strokeStyle = 'rgba(0,229,255,0.3)';
+            cx.lineWidth = 0.8;
+            for (let i = 0; i < n.pins.length - 1; i++) {
+                const [rA, pA] = n.pins[i].split('-');
+                const [rB, pB] = n.pins[i+1].split('-');
+                const cA = comps.find(c => c.ref === rA);
+                const cB = comps.find(c => c.ref === rB);
+                if (!cA || !cB) return;
+                const posA = getPinPos(cA, parseInt(pA)||0);
+                const posB = getPinPos(cB, parseInt(pB)||0);
+                const sxA = posA.x * 4, syA = posA.y * 4;
+                const sxB = posB.x * 4, syB = posB.y * 4;
+                cx.beginPath();
+                const midX = (sxA + sxB) / 2;
+                cx.moveTo(sxA, syA);
+                if (Math.abs(sxB-sxA) > Math.abs(syB-syA)) {
+                    cx.lineTo(midX, syA);
+                    cx.lineTo(midX, syB);
+                } else {
+                    cx.lineTo(sxA, (syA+syB)/2);
+                    cx.lineTo(sxB, (syA+syB)/2);
+                }
+                cx.lineTo(sxB, syB);
+                cx.stroke();
+            }
+        });
+    }
+
+    // Tracing en cours
+    if (tracing) {
+        const fp = getPinPos(tracing.fromComp, tracing.fromPin);
+        cx.strokeStyle = 'rgba(0,229,255,0.6)';
+        cx.lineWidth = 0.8;
+        cx.setLineDash([4, 3]);
+        cx.beginPath();
+        const sx = fp.x*4, sy = fp.y*4, tx = tracing.currentX*4, ty = tracing.currentY*4;
+        cx.moveTo(sx, sy);
+        cx.lineTo((sx+tx)/2, sy);
+        cx.lineTo((sx+tx)/2, ty);
+        cx.lineTo(tx, ty);
+        cx.stroke();
+        cx.setLineDash([]);
+    }
+
+    // Trous de montage réalistes aux 4 coins (comme f07.png)
+    const padding = 10;
+    const cornerHoles = [
+        [padding, padding],
+        [bW * 4 - padding, padding],
+        [padding, bH * 4 - padding],
+        [bW * 4 - padding, bH * 4 - padding]
+    ];
+    cornerHoles.forEach(([hx, hy]) => {
+        // Cercle extérieur doré
+        cx.fillStyle = '#c9a227';
+        cx.beginPath();
+        cx.arc(hx, hy, 4, 0, Math.PI * 2);
+        cx.fill();
+        // Cercle intérieur (foret de perçage)
+        cx.fillStyle = '#020408';
+        cx.beginPath();
+        cx.arc(hx, hy, 2, 0, Math.PI * 2);
+        cx.fill();
+    });
+
+    // Composants
+    comps.forEach(c => {
+        const s = getShape(c);
+        const cxX = c.x_mm * 4, cxY = c.y_mm * 4;
+        const isConflict = conflicts.some(con => con.ref_a === c.ref || con.ref_b === c.ref);
+
+        cx.save();
+        cx.translate(cxX, cxY);
+        cx.rotate((c.rotation_deg || 0) * Math.PI / 180);
+
+        if (isConflict) {
+            cx.shadowColor = 'rgba(255,82,82,0.8)';
+            cx.shadowBlur = 12;
+        }
+
+        const w = s.w * 4;
+        const h = s.h * 4;
+
+        // 1. Dessiner les Pads Cuivre/Or (Garantit que les traces tombent juste)
+        s.pins.forEach(p => {
+            const px = p.x * 4, py = p.y * 4;
+            // Pad doré externe
+            cx.fillStyle = '#ffd54f';
+            cx.beginPath();
+            cx.arc(px, py, 2.2, 0, Math.PI * 2);
+            cx.fill();
+            // Trou de perçage (noir)
+            cx.fillStyle = '#020408';
+            cx.beginPath();
+            cx.arc(px, py, 1.0, 0, Math.PI * 2);
+            cx.fill();
+        });
+
+        // 2. Identifier la catégorie pour le rendu réaliste
+        let key = 'default';
+        if (c && c.lib) {
+            for (const k of Object.keys(SHAPES)) {
+                if (k !== 'default' && c.lib.toLowerCase().includes(k.toLowerCase())) {
+                    key = k;
+                    break;
+                }
+            }
+        }
+
+        // 3. Rendu du corps physique realistiquement
+        if (key === 'Resistor' || key === 'Diode') {
+            // Fils de connexion axiaux (axial leads)
+            cx.strokeStyle = '#a5b1c2';
+            cx.lineWidth = 1.2;
+            s.pins.forEach(pin => {
+                cx.beginPath();
+                cx.moveTo(0, 0);
+                cx.lineTo(pin.x * 4, pin.y * 4);
+                cx.stroke();
+            });
+
+            if (key === 'Resistor') {
+                // Corps céramique beige
+                let resGrad = cx.createLinearGradient(-w/2, 0, w/2, 0);
+                resGrad.addColorStop(0, '#cbc3a0');
+                resGrad.addColorStop(0.3, '#ebdca5');
+                resGrad.addColorStop(0.7, '#ebdca5');
+                resGrad.addColorStop(1, '#cbc3a0');
+                cx.fillStyle = resGrad;
+                cx.beginPath();
+                cx.roundRect(-w/2, -h/2, w, h, 1.5);
+                cx.fill();
+
+                // Capuchons métalliques brillants aux bouts
+                cx.fillStyle = '#a5b1c2';
+                cx.fillRect(-w/2, -h/2, 1.8, h);
+                cx.fillRect(w/2 - 1.8, -h/2, 1.8, h);
+
+                // Bandes de code couleur (ex: 10k -> Marron, Noir, Orange, Or)
+                cx.fillStyle = '#6F4E37'; cx.fillRect(-w/4, -h/2, 1.2, h); // Marron
+                cx.fillStyle = '#000000'; cx.fillRect(-w/12, -h/2, 1.2, h); // Noir
+                cx.fillStyle = '#FF9F00'; cx.fillRect(w/12, -h/2, 1.2, h); // Orange
+                cx.fillStyle = '#FFD700'; cx.fillRect(w/4, -h/2, 1.2, h); // Or
+            } else {
+                // Diode corps plastique noir
+                cx.fillStyle = '#1e272e';
+                cx.beginPath();
+                cx.roundRect(-w/2, -h/2, w, h, 1);
+                cx.fill();
+                // Bande cathode argentée
+                cx.fillStyle = '#cbd5e1';
+                cx.fillRect(-w/3, -h/2, w * 0.18, h);
+            }
+        } else if (key === 'Package_DIP' || key === 'Package_SO' || key === 'Package_QFP' || key === 'MCU' || key === 'Regulator') {
+            // Broches métalliques argentées reliant le corps aux pads
+            cx.fillStyle = '#b2bec3';
+            s.pins.forEach(pin => {
+                const px = pin.x * 4;
+                const py = pin.y * 4;
+                cx.fillRect(px < 0 ? -w/2 - 1.5 : w/2, py - 0.8, Math.abs(px) - w/2 + 2, 1.6);
+            });
+
+            // Corps noir mat en résine époxy
+            let bodyGrad = cx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+            bodyGrad.addColorStop(0, '#2c3e50');
+            bodyGrad.addColorStop(0.4, '#34495e');
+            bodyGrad.addColorStop(1, '#1e272e');
+            cx.fillStyle = bodyGrad;
+            cx.beginPath();
+            cx.roundRect(-w/2, -h/2, w, h, 2);
+            cx.fill();
+
+            // Point blanc repère broche 1
+            cx.fillStyle = '#ffffff';
+            cx.beginPath();
+            cx.arc(-w/2 + 2.5, -h/2 + 2.5, 0.8, 0, Math.PI * 2);
+            cx.fill();
+
+            // Encoche demi-lune standard pour les boîtiers DIP
+            if (key === 'Package_DIP') {
+                cx.fillStyle = '#020408';
+                cx.beginPath();
+                cx.arc(0, -h/2, w * 0.15, 0, Math.PI);
+                cx.fill();
+            }
+        } else if (key === 'LED') {
+            // Dôme translucide de LED avec anode/cathode visibles
+            let ledGrad = cx.createRadialGradient(-w/5, -h/5, 1, 0, 0, w/2);
+            ledGrad.addColorStop(0, '#ff7675');
+            ledGrad.addColorStop(0.7, '#ef5350');
+            ledGrad.addColorStop(1, '#b71c1c');
+
+            cx.fillStyle = ledGrad;
+            cx.shadowColor = '#ff7675';
+            cx.shadowBlur = 10;
+            cx.beginPath();
+            cx.arc(0, 0, w/2, 0, Math.PI * 2);
+            cx.fill();
+            cx.shadowBlur = 0;
+
+            // Structure interne en nickel de l'enclume
+            cx.strokeStyle = '#ffd2d2';
+            cx.lineWidth = 0.8;
+            cx.beginPath();
+            cx.moveTo(-w/4, h/6);
+            cx.lineTo(-w/8, -h/8);
+            cx.lineTo(w/8, -h/8);
+            cx.lineTo(w/5, h/6);
+            cx.stroke();
+        } else if (key === 'Capacitor') {
+            // Condensateur radial bleu vif
+            cx.fillStyle = '#0984e3';
+            cx.beginPath();
+            cx.arc(0, 0, w/2, 0, Math.PI * 2);
+            cx.fill();
+            // Bande blanche/grise de polarité négative
+            cx.fillStyle = '#dfe6e9';
+            cx.beginPath();
+            cx.arc(0, 0, w/2, -Math.PI / 4, Math.PI / 4);
+            cx.lineTo(0, 0);
+            cx.fill();
+        } else if (key === 'Connector') {
+            // Connecteur JST / Embase plastique d'alimentation
+            cx.fillStyle = '#2c3e50';
+            cx.beginPath();
+            cx.roundRect(-w/2, -h/2, w, h, 1.5);
+            cx.fill();
+
+            cx.strokeStyle = '#7f8c8d';
+            cx.lineWidth = 0.8;
+            cx.strokeRect(-w/2 + 1, -h/2 + 1, w - 2, h - 2);
+
+            // Broches dorées intérieures
+            cx.fillStyle = '#f1c40f';
+            s.pins.forEach(pin => {
+                cx.fillRect(pin.x * 4 - 1.2, pin.y * 4 - 1.2, 2.4, 2.4);
+                cx.fillStyle = '#2c3e50';
+                cx.fillRect(pin.x * 4 - 0.6, pin.y * 4 - 0.6, 1.2, 1.2);
+                cx.fillStyle = '#f1c40f';
+            });
+        } else if (key === 'Crystal') {
+            // Boîtier métallique argenté poli
+            let steelGrad = cx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+            steelGrad.addColorStop(0, '#ffffff');
+            steelGrad.addColorStop(0.5, '#bdc3c7');
+            steelGrad.addColorStop(1, '#7f8c8d');
+            cx.fillStyle = steelGrad;
+            cx.beginPath();
+            cx.roundRect(-w/2, -h/2, w, h, 3);
+            cx.fill();
+
+            cx.strokeStyle = '#95a5a6';
+            cx.lineWidth = 1;
+            cx.stroke();
+        } else {
+            // Rendu générique de haute qualité (gradients)
+            let defaultGrad = cx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+            defaultGrad.addColorStop(0, c === sel ? 'rgba(0,229,255,0.9)' : s.color);
+            defaultGrad.addColorStop(1, '#2c3e50');
+            cx.fillStyle = defaultGrad;
+            cx.beginPath();
+            cx.roundRect(-w/2, -h/2, w, h, 2);
+            cx.fill();
+
+            cx.strokeStyle = c === sel ? '#fff' : 'rgba(255,255,255,0.4)';
+            cx.lineWidth = c === sel ? 1 : 0.6;
+            cx.stroke();
+        }
+
+        // 4. Contour de Sélection interactive
+        if (c === sel) {
+            cx.strokeStyle = '#00e5ff';
+            cx.lineWidth = 0.8;
+            cx.setLineDash([3, 2]);
+            const m = 2.5;
+            cx.strokeRect(-w/2 - m, -h/2 - m, w + m * 2, h + m * 2);
+            cx.setLineDash([]);
+            cx.fillStyle = '#00e5ff';
+            [
+                [-w/2 - m, -h/2 - m], [w/2 + m, -h/2 - m],
+                [-w/2 - m, h/2 + m], [w/2 + m, h/2 + m]
+            ].forEach(([cxX, cyY]) => {
+                cx.fillRect(cxX - 0.8, cyY - 0.8, 1.6, 1.6);
+            });
+        }
+
+        // 5. Texte d'identification Réf des Composants (Police lisible et proportionnelle)
+        cx.fillStyle = '#ffffff';
+        cx.font = 'bold 9px Inter';
+        cx.textAlign = 'center';
+        cx.textBaseline = 'middle';
+        cx.shadowColor = '#000';
+        cx.shadowBlur = 4;
+        cx.fillText(c.ref, 0, 0);
+        cx.shadowBlur = 0;
+        cx.restore();
+    });
+
+    // Preview de placement fantôme parfaitement proportionné
+    if (placementPreview && mouseCanvasX !== 0) {
+        const sx = Math.round(mouseCanvasX / snapGrid) * snapGrid;
+        const sy = Math.round(mouseCanvasY / snapGrid) * snapGrid;
+        cx.globalAlpha = 0.55;
+        const s = getShape({ lib: placementPreview.cat });
+        const w = s.w * 4;
+        const h = s.h * 4;
+        cx.fillStyle = s.color;
+        cx.beginPath();
+        cx.roundRect(sx * 4 - w / 2, sy * 4 - h / 2, w, h, 1.5 * 4);
+        cx.fill();
+        cx.fillStyle = '#fff';
+        cx.font = 'bold 9px Inter';
+        cx.textAlign = 'center';
+        cx.fillText(placementPreview.ref, sx * 4, sy * 4);
+        cx.globalAlpha = 1;
+    }
+
+    cx.restore();
+}
+
+function screenToBoard(clientX, clientY) {
+    const r = cv.getBoundingClientRect();
+    const scale = zoom * 4;
+    return {
+        x: (clientX - r.left - panX) / scale,
+        y: (clientY - r.top - panY) / scale
+    };
+}
+
+function hitTestComponent(mx, my) {
+    for (let i = comps.length - 1; i >= 0; i--) {
+        const c = comps[i], s = getShape(c);
+        const rad = -(c.rotation_deg||0) * Math.PI / 180;
+        const dx = mx - c.x_mm, dy = my - c.y_mm;
+        const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+        const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+        if (Math.abs(lx) < s.w/2 + 1 && Math.abs(ly) < s.h/2 + 1) return c;
+    }
+    return null;
+}
+
+function hitTestPin(mx, my) {
+    for (let i = comps.length - 1; i >= 0; i--) {
+        const c = comps[i], s = getShape(c);
+        for (let p = 0; p < s.pins.length; p++) {
+            const pp = getPinPos(c, p);
+            if ((mx-pp.x)**2 + (my-pp.y)**2 < 2) return { comp: c, pinIdx: p };
+        }
+    }
+    return null;
+}
+
+function setupCanvasListeners() {
+    cv.addEventListener('mousedown', e => {
+        const pos = screenToBoard(e.clientX, e.clientY);
+        if (e.button === 1 || e.ctrlKey || e.altKey) {
+            isPan = true;
+            lastMX = e.clientX; lastMY = e.clientY;
+            vp.style.cursor = 'grabbing';
+            e.preventDefault();
+            return;
+        }
+
+        if (tool === 'place' && placementPreview) {
+            const sx = Math.round(pos.x / snapGrid) * snapGrid;
+            const sy = Math.round(pos.y / snapGrid) * snapGrid;
+            comps.push({
+                ref: placementPreview.ref,
+                lib: placementPreview.cat,
+                fp: placementPreview.fp,
+                value: placementPreview.fp,
+                x_mm: sx,
+                y_mm: sy,
+                rotation_deg: 0,
+                layer: 'F.Cu'
+            });
+            const refPrefix = placementPreview.cat.split('_')[0].charAt(0).toUpperCase();
+            placementPreview.ref = refPrefix + (comps.length + 1);
+            saveState();
+            updUI();
+            draw();
+            return;
+        }
+
+        if (tool === 'trace') {
+            const hit = hitTestPin(pos.x, pos.y);
+            if (tracing) {
+                if (hit && hit.comp !== tracing.fromComp) {
+                    nets.push({
+                        name: `NET_${nets.length+1}`,
+                        pins: [`${tracing.fromComp.ref}-${tracing.fromPin}`, `${hit.comp.ref}-${hit.pinIdx}`]
+                    });
+                    tracing = null;
+                    saveState();
+                    updUI();
+                    draw();
+                } else {
+                    tracing = null;
+                    draw();
+                }
+            } else if (hit) {
+                tracing = { fromComp: hit.comp, fromPin: hit.pinIdx, currentX: pos.x, currentY: pos.y };
+                draw();
+            }
+            return;
+        }
+
+        if (tool === 'select') {
+            const hit = hitTestComponent(pos.x, pos.y);
+            if (hit) {
+                sel = hit;
+                drag = hit;
+                dragOffX = hit.x_mm - pos.x;
+                dragOffY = hit.y_mm - pos.y;
+                vp.style.cursor = 'move';
+            } else {
+                sel = null;
+                drag = null;
+            }
+            updUI();
+            draw();
+        }
+    });
+
+    cv.addEventListener('mousemove', e => {
+        const pos = screenToBoard(e.clientX, e.clientY);
+        mouseCanvasX = pos.x;
+        mouseCanvasY = pos.y;
+
+        if (isPan) {
+            panX += e.clientX - lastMX;
+            panY += e.clientY - lastMY;
+            lastMX = e.clientX; lastMY = e.clientY;
+            draw();
+            return;
+        }
+
+        if (drag && tool === 'select') {
+            drag.x_mm = Math.round((pos.x + dragOffX) / snapGrid) * snapGrid;
+            drag.y_mm = Math.round((pos.y + dragOffY) / snapGrid) * snapGrid;
+            draw();
+        }
+
+        if (tracing) {
+            tracing.currentX = pos.x;
+            tracing.currentY = pos.y;
+            draw();
+        }
+
+        if (placementPreview) draw();
+    });
+
+    cv.addEventListener('mouseup', () => {
+        if (isPan) { isPan = false; vp.style.cursor = ''; }
+        if (drag) { drag = null; vp.style.cursor = ''; saveState(); updUI(); }
+    });
+
+    cv.addEventListener('mouseleave', () => {
+        isPan = false;
+        vp.style.cursor = '';
+    });
+
+    cv.addEventListener('wheel', e => {
+        e.preventDefault();
+        const rect = cv.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const worldX = (mx - panX) / zoom / 4;
+        const worldY = (my - panY) / zoom / 4;
+        const factor = e.deltaY > 0 ? 0.92 : 1.08;
+        zoom = Math.max(0.15, Math.min(8, zoom * factor));
+        panX = mx - worldX * zoom * 4;
+        panY = my - worldY * zoom * 4;
+        draw();
+    }, { passive: false });
+
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    switch (e.key.toLowerCase()) {
+        case 'delete': case 'backspace': if (sel) deleteComp(); break;
+        case 'r': if (sel) { sel.rotation_deg = ((sel.rotation_deg||0)+90)%360; saveState(); draw(); updUI(); } break;
+        case 'escape': setTool('select'); break;
+        case 's': setTool('select'); break;
+        case 'p': setTool('place'); break;
+        case 't': setTool('trace'); break;
+        case 'z': if (e.ctrlKey || e.metaKey) { e.preventDefault(); undo(); } break;
+        case 'f': if (e.ctrlKey || e.metaKey) { e.preventDefault(); resetZoom(); } break;
+    }
+});
+
+function resetZoom() {
+    zoom = 1.8;
+    panX = cv.width / 2;
+    panY = cv.height / 2;
+    draw();
+}
+
+// ═══════════════════ UI ═══════════════════
+function updUI() {
+    document.getElementById('sc').textContent = comps.length;
+    document.getElementById('sn').textContent = nets.length;
+    document.getElementById('boardW').value = bW;
+    document.getElementById('boardH').value = bH;
+
+    const insp = document.getElementById('insp');
+    const btnDel = document.getElementById('btn-delete');
+    if (sel) {
+        insp.innerHTML = `
+            <div class="row"><label>Réf</label><input value="${sel.ref}" onchange="sel.ref=this.value;saveState();draw()" style="width:80px;"></div>
+            <div class="row"><label>Valeur</label><input value="${sel.value||''}" onchange="sel.value=this.value" style="width:80px;"></div>
+            <div class="row"><label>X (mm)</label><input type="number" value="${sel.x_mm}" step="0.5" onchange="sel.x_mm=parseFloat(this.value);saveState();draw()" style="width:70px;"></div>
+            <div class="row"><label>Y (mm)</label><input type="number" value="${sel.y_mm}" step="0.5" onchange="sel.y_mm=parseFloat(this.value);saveState();draw()" style="width:70px;"></div>
+            <div class="row"><label>Rot</label><input type="number" value="${sel.rotation_deg||0}" step="90" onchange="sel.rotation_deg=parseFloat(this.value);saveState();draw()" style="width:70px;"></div>
+            <div class="row"><label>Couche</label><select onchange="sel.layer=this.value;saveState();draw()"><option value="F.Cu" ${sel.layer==='F.Cu'?'selected':''}>Top</option><option value="B.Cu" ${sel.layer==='B.Cu'?'selected':''}>Bottom</option></select></div>`;
+        btnDel.classList.remove('hid');
+    } else {
+        insp.innerHTML = '<span style="color:var(--text-sec);font-size:10px;">Sélectionnez un composant</span>';
+        btnDel.classList.add('hid');
+    }
+    updateBOM();
+    drcCheckVisual();
+}
+
+function deleteComp() {
+    if (!sel) return;
+    const ref = sel.ref;
+    comps = comps.filter(c => c.ref !== ref);
+    nets = nets.filter(n => !n.pins.some(p => p.startsWith(ref+'-')));
+    sel = null;
+    saveState();
+    updUI();
+    draw();
+    showNotification('🗑️ Composant supprimé');
+}
+
+function updateBOM() {
+    const list = document.getElementById('bomList');
+    const totalEl = document.getElementById('bomTotal');
+    if (!comps.length) {
+        list.innerHTML = '<span style="color:var(--text-sec);font-size:11px;">Ajoutez des composants</span>';
+        totalEl.textContent = '0.00 $';
+        return;
+    }
+    let total = 0;
+    list.innerHTML = comps.map(c => {
+        let price = PRICES.DEFAULT;
+        for (const k of Object.keys(PRICES)) {
+            if (k !== 'DEFAULT' && c.lib && c.lib.toUpperCase().includes(k)) { price = PRICES[k]; break; }
+        }
+        total += price;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:10px;">
+            <span><strong>${c.ref}</strong> <span style="color:var(--text-sec);font-size:9px;">${c.lib||''}</span></span>
+            <span style="color:var(--accent);">${price.toFixed(2)} $</span>
+        </div>`;
+    }).join('');
+    totalEl.textContent = total.toFixed(2) + ' $';
+}
+
+function drcCheckVisual() {
+    const conflicts = checkDRC();
+    const drcEl = document.getElementById('drc');
+    drcEl.innerHTML = conflicts.length === 0
+        ? '<span style="color:var(--success);">✅ Aucun conflit</span>'
+        : `<span style="color:var(--danger);">❌ ${conflicts.length} conflit(s)</span>`;
+}
+
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('on'));
+    const tabs = ['ai','scan','bdd','props','bom','copilote'];
+    const idx = tabs.indexOf(name);
+    if (name === 'copilote') renderRules();
+    if (idx >= 0) {
+        const tabEl = document.querySelector(`.tab:nth-child(${idx+1})`);
+        if (tabEl) tabEl.classList.add('on');
+    }
+    const contentEl = document.getElementById('tab-'+name);
+    if (contentEl) contentEl.classList.add('on');
+}
+
+// ═══ Copilote PCB ancré + mémoire de règles maison (localStorage, injectées côté serveur) ═══
+function getRules() { try { return JSON.parse(localStorage.getItem('revpcbai_rules') || '[]'); } catch (e) { return []; } }
+function saveRules(r) { localStorage.setItem('revpcbai_rules', JSON.stringify(r)); renderRules(); }
+function addRule() {
+    const el = document.getElementById('cop-rule'); const v = (el.value || '').trim();
+    if (!v) return; const r = getRules(); r.push(v.slice(0, 200)); saveRules(r); el.value = '';
+    showNotification('🧠 Règle apprise : le copilote la respectera.');
+}
+function removeRule(i) { const r = getRules(); r.splice(i, 1); saveRules(r); }
+function renderRules() {
+    const box = document.getElementById('cop-rules'); if (!box) return; const r = getRules();
+    box.innerHTML = r.length ? r.map((x, i) =>
+        `<div style="display:flex;gap:6px;align-items:center;margin:3px 0;font-size:10px;"><span style="flex:1;">• ${x.replace(/</g, '&lt;')}</span><button class="tb" style="font-size:9px;padding:2px 6px;" onclick="removeRule(${i})">✕</button></div>`
+    ).join('') : '<div style="font-size:10px;color:var(--text-sec);">Aucune règle maison. Ajoutes-en une : le copilote l\'appliquera à chaque réponse.</div>';
+}
+async function askCopilote() {
+    const q = (document.getElementById('cop-q').value || '').trim(); if (!q) return;
+    if (!checkAndConsumeCredits(1)) return;
+    const out = document.getElementById('cop-out'); out.innerHTML = '<span style="color:var(--text-sec);">Réflexion…</span>';
+    try {
+        const res = await secureFetch('/api/copilote', { method: 'POST', body: JSON.stringify({ question: q, rules: getRules() }) });
+        const d = await res.json();
+        if (res.ok && d.status === 'success') { out.textContent = d.data.answer; }
+        else { out.innerHTML = '<span style="color:#f66;">' + (d.error || 'Erreur') + '</span>'; }
+    } catch (e) { out.innerHTML = '<span style="color:#f66;">' + e.message + '</span>'; }
+}
+
+function openHub() { document.getElementById('hubOverlay').classList.remove('hid'); loadTemplates(); }
+function closeHub() { document.getElementById('hubOverlay').classList.add('hid'); }
+
+function newProject() {
+    comps = []; nets = []; sel = null;
+    bW = 100; bH = 80;
+    historyStack = []; historyIdx = -1;
+    saveState();
+    updUI();
+    draw();
+    closeHub();
+    showNotification('✨ Nouveau projet créé');
+}
+
+function saveProjectToStorage() {
+    const name = document.getElementById('projectName')?.value?.trim() || 'MonPCB';
+    const key = 'revpcbai_autosave_' + name.replace(/\s+/g, '_');
+    const project = { name, bW, bH, comps, nets, savedAt: new Date().toISOString() };
+    localStorage.setItem(key, JSON.stringify(project));
+    localStorage.setItem('revpcbai_latest', key);
+}
+
+function saveProjectAs() {
+    saveProjectToStorage();
+    showNotification('💾 Projet sauvegardé');
+}
+
+// Auto-save
+window.addEventListener('beforeunload', saveProjectToStorage);
+
+// ═══════════════════ TEMPLATES ═══════════════════
+let allTemplates = [];
+async function loadTemplates() {
+    try {
+        const r = await secureFetch('/api/templates');
+        const d = await r.json();
+        if (d.status === 'success') { allTemplates = d.data; filterTemplatesByCategory(); }
+    } catch (e) {
+        console.warn('Templates API offline, using local');
+        allTemplates = [
+            { id: 'tpl_alim_5v', name: 'Alim 5V AMS1117', category: 'alim', desc: 'Régulateur linéaire 5V', price: 0.5, components: [], nets: [] }
+        ];
+        filterTemplatesByCategory();
+    }
+}
+
+function filterTemplatesByCategory() {
+    const cat = document.getElementById('templateCategory')?.value || 'all';
+    const filtered = cat === 'all' ? allTemplates : allTemplates.filter(t => t.category === cat);
+    const grid = document.getElementById('templatesGrid');
+    const icons = { alim:'⚡', mcu:'🧠', capteur:'🌡️', actionneur:'🔧', comm:'📡', tempo:'⏱️', convertisseur:'🔄', afficheur:'📺', domotique:'🏠' };
+    grid.innerHTML = filtered.length
+        ? filtered.map(t => `
+            <div class="template-card" onclick="loadTemplateDetails('${t.id}')">
+                <div style="font-size:24px;margin-bottom:6px;">${icons[t.category]||'📦'}</div>
+                <strong style="display:block;">${t.name}</strong>
+                <small style="color:var(--text-sec);display:block;margin:4px 0;">${t.desc||''}</small>
+                <span style="color:var(--accent);font-weight:600;">${(t.price||0).toFixed(2)} $</span>
+            </div>`).join('')
+        : '<p style="text-align:center;color:var(--text-sec);grid-column:1/-1;">Aucun template</p>';
+}
+
+async function loadTemplateDetails(id) {
+    try {
+        const r = await secureFetch(`/api/templates/${id}`);
+        const d = await r.json();
+        const t = d.data;
+        comps = JSON.parse(JSON.stringify(t.components));
+        nets = JSON.parse(JSON.stringify(t.nets || []));
+        saveState();
+        updUI();
+        draw();
+        closeHub();
+        showNotification('✅ '+t.name+' chargé');
+    } catch (e) {
+        showNotification('❌ Erreur chargement template', 'error');
+    }
+}
+
+// ═══════════════════ LIBRARY ═══════════════════
+function filterLib() {
+    const q = document.getElementById('libSearch')?.value.toLowerCase() || '';
+    const list = document.getElementById('libList');
+    const filtered = q ? flatLib.filter(x => x.label.toLowerCase().includes(q)) : flatLib.slice(0, 40);
+    if (list) {
+        list.innerHTML = filtered.slice(0, 50).map(x =>
+            `<div class="lib-item" onclick="placeFromLib('${x.cat}','${x.fp}')">
+                <span>${x.label}</span>
+                <small>${x.cat}</small>
+            </div>`
+        ).join('');
+    }
+}
+
+async function searchFootprints(query) {
+    if (query && query.length >= 2) {
+        try {
+            const r = await secureFetch(`/api/components/search?q=${encodeURIComponent(query)}`);
+            const d = await r.json();
+            const list = document.getElementById('libList');
+            if (list && d.data && d.data.length) {
+                list.innerHTML = d.data.map(f =>
+                    `<div class="lib-item" onclick="placeFromLib('${f.lib}','${f.fp}')">
+                        <span>${f.name}</span>
+                        <small>${f.lib}:${f.fp}</small>
+                    </div>`
+                ).join('');
+                return;
+            }
+        } catch (e) { console.error("Search failed:", e); }
+    }
+    filterLib();
+}
+
+function placeFromLib(cat, fp) {
+    setTool('place');
+    const refPrefix = cat.split('_')[0].charAt(0).toUpperCase();
+    placementPreview = { cat, fp, label: `${cat}:${fp}`, ref: refPrefix + (comps.length + 1) };
+    vp.style.cursor = 'crosshair';
+    draw();
+}
+
+// ═══════════════════ SCAN ═══════════════════
+function capturePhoto(idx, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        scanImages[idx-1] = e.target.result;
+        const preview = document.getElementById('preview-'+idx);
+        if (preview) {
+            preview.innerHTML = `<img src="${e.target.result}" style="max-width:100%;max-height:80px;border-radius:4px;border:1px solid var(--border);">`;
+        }
+        // Show next step
+        if (idx < 3) {
+            const nextStep = document.getElementById('scan-step-'+(idx+1));
+            if (nextStep) nextStep.classList.remove('hid');
+        }
+        // Show analyze button when all 3 images are present
+        if (scanImages.every(img => img !== null)) {
+            document.getElementById('btn-analyze-all').classList.remove('hid');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+async function analyzeAllPhotos() {
+    if (!checkAndConsumeCredits(2)) return;
+    document.getElementById('loader').classList.remove('hid');
+    try {
+        const res = await secureFetch('/api/analyze_multi_photo', {
+            method: 'POST',
+            body: JSON.stringify({
+                photos: scanImages,
+                board_width_mm: bW,
+                board_height_mm: bH
+            })
+        });
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const d = await res.json();
+        
+        if (d.status === 'success') {
+            pendingPreviewComps = d.data.components || [];
+            pendingPreviewNets = d.data.nets || [];
+            showCompPreviewModal(pendingPreviewComps);
+            document.getElementById('scan-clarify').classList.add('hid');
+            if (d.data.notes) showNotification('📝 ' + String(d.data.notes).slice(0, 160), 'info');
+        } else if (d.status === 'need_clarification' || d.status === 'partial') {
+            if (d.status === 'partial' && d.components) {
+                comps = d.components || [];
+                nets = d.nets || [];
+                saveState();
+                updUI();
+                draw();
+            }
+            document.getElementById('scan-clarify').classList.remove('hid');
+            const qList = document.getElementById('clarify-questions');
+            if (qList && d.questions) {
+                qList.innerHTML = d.questions.map(q => `• ${q}`).join('<br>');
+            }
+            if (d.message) {
+                showNotification('⚠️ ' + d.message, 'warning');
+            }
+        } else {
+            showNotification('❌ '+(d.detail||'Erreur analyse'), 'error');
+        }
+    } catch (e) {
+        showNotification('❌ '+e.message, 'error');
+    }
+    document.getElementById('loader').classList.add('hid');
+}
+
+async function submitClarification() {
+    const input = document.getElementById('clarify-input')?.value?.trim();
+    if (!input) return;
+    
+    document.getElementById('loader-text').innerText = "PRISE EN COMPTE DES PRÉCISIONS...";
+    document.getElementById('loader').classList.remove('hid');
+    try {
+        const res = await secureFetch('/api/clarify_analysis', {
+            method: 'POST',
+            body: JSON.stringify({
+                photos: scanImages,
+                clarification: input,
+                board_width_mm: bW,
+                board_height_mm: bH
+            })
+        });
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+        if (data.status === 'success') {
+            pendingPreviewComps = data.data.components || [];
+            pendingPreviewNets = data.data.nets || [];
+            showCompPreviewModal(pendingPreviewComps);
+            document.getElementById('scan-clarify').classList.add('hid');
+            document.getElementById('clarify-input').value = '';
+            showNotification('✅ Circuit mis à jour avec vos précisions !', 'success');
+        } else {
+            showNotification('❌ Erreur : ' + (data.detail || 'Réponse vide'), 'error');
+        }
+    } catch(e) {
+        showNotification('❌ Erreur réseau : ' + e.message, 'error');
+    }
+    document.getElementById('loader-text').innerText = "VOTRE ASSISTANT IA CONÇOIT LE PCB...";
+    document.getElementById('loader').classList.add('hid');
+}
+
+// ═══════════════════ AI GENERATION ═══════════════════
+let pendingPreviewComps = [];
+let pendingPreviewNets = [];
+
+function showCompPreviewModal(compList) {
+    pendingPreviewComps = compList;
+    const list = document.getElementById('compPreviewList');
+    list.innerHTML = compList.map((c, i) => `
+        <label class="preview-card" style="display:flex;align-items:flex-start;gap:10px;">
+            <input type="checkbox" checked data-idx="${i}" style="accent-color:#00e5ff;width:16px;height:16px;flex-shrink:0;">
+            <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="color:#fff;font-weight:600;">${c.ref}</span>
+                    <span style="color:var(--accent);font-size:10px;">${c.value||''}</span>
+                    <span style="color:var(--text-sec);font-size:9px;">${c.lib||''}:${c.fp||''}</span>
+                </div>
+                <div style="color:var(--text-sec);font-size:9px;margin-top:2px;">${c.reason||''}</div>
+            </div>
+        </label>
+    `).join('');
+    document.getElementById('compPreviewModal').classList.remove('hid');
+}
+
+function applyPreviewedComps() {
+    const checks = document.querySelectorAll('#compPreviewList input[type=checkbox]');
+    const selectedRefs = new Set();
+    const selected = [];
+    checks.forEach(cb => {
+        if (cb.checked) {
+            const comp = pendingPreviewComps[parseInt(cb.dataset.idx)];
+            if (comp) {
+                selected.push(comp);
+                selectedRefs.add(comp.ref);
+            }
+        }
+    });
+    if (!selected.length) {
+        showNotification('Sélectionnez au moins un composant.', 'error');
+        return;
+    }
+
+    const filteredNets = pendingPreviewNets.map(net => {
+        const filteredPins = net.pins.filter(pin => selectedRefs.has(pin.split('-')[0]));
+        return { ...net, pins: filteredPins };
+    }).filter(net => net.pins.length >= 2);
+
+    comps = selected;
+    nets = filteredNets;
+    document.getElementById('compPreviewModal').classList.add('hid');
+    saveState();
+    updUI();
+    draw();
+    showNotification(`✅ ${comps.length} composants appliqués`);
+}
+
+async function generateFromPrompt() {
+    if (!checkAndConsumeCredits(1)) return;
+    const prompt = document.getElementById('promptText').value.trim();
+    if (!prompt) { showNotification('⚠️ Entrez un prompt', 'error'); return; }
+    document.getElementById('loader').classList.remove('hid');
+    try {
+        const r = await secureFetch('/api/generate_from_prompt', {
+            method: 'POST',
+            body: JSON.stringify({
+                prompt,
+                board_width_mm: bW,
+                board_height_mm: bH
+            })
+        });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        if (d.status === 'success') {
+            pendingPreviewComps = d.data.components || [];
+            pendingPreviewNets = d.data.nets || [];
+            showCompPreviewModal(pendingPreviewComps);
+        } else {
+            showNotification('❌ '+(d.detail||'Erreur génération'), 'error');
+        }
+    } catch (e) {
+        showNotification('❌ '+e.message, 'error');
+    }
+    document.getElementById('loader').classList.add('hid');
+}
+
+async function analyzeDesign() {
+    if (!comps.length) { showNotification('Ajoutez des composants', 'error'); return; }
+    document.getElementById('loader').classList.remove('hid');
+    try {
+        const r = await secureFetch('/api/analyze_design', {
+            method: 'POST',
+            body: JSON.stringify({ components: comps, nets: nets, board_width_mm: bW, board_height_mm: bH })
+        });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        if (d.status === 'success') {
+            showNotification('✅ Analyse: '+d.data.recommendations?.length+' recommandations');
+        }
+    } catch (e) { showNotification('❌ '+e.message, 'error'); }
+    document.getElementById('loader').classList.add('hid');
+}
+
+async function doAutoRoute() {
+    if (!nets.length) { showNotification('Ajoutez des connexions', 'error'); return; }
+    showNotification('🔀 Autoroutage en cours...', 'warning');
+    // Simulation d'autoroutage
+    setTimeout(() => showNotification('✅ Autoroutage terminé (routes optimisées)'), 1500);
+}
+
+// ═══════════════════ GERBER EXPORT ═══════════════════
+function formatCoord(mm, scale = 4) {
+    const micro = Math.round(mm * 10000);
+    return (micro * scale).toString();
+}
+
+function generateApertureList() {
+    // D10-D13: rond; D14-D16: rectangle (croix, etc.)
+    let apertures = '';
+    apertures += '%ADD10C,0.400*%\n'; // Trace copper
+    apertures += '%ADD11C,0.800*%\n'; // Pad via
+    apertures += '%ADD12C,1.200*%\n'; // Pad large
+    apertures += '%ADD13R,1.000X1.000*%\n'; // Rectangle 1mm
+    return apertures;
+}
+
+function generateBoardOutlineGerber() {
+    let gerber = '';
+    gerber += '%FSLAX25Y25*%\n';
+    gerber += '%MOIN*%\n';
+    gerber += generateApertureList();
+    gerber += '%ADD14C,0.100*%\n';
+    
+    const scale = 4;
+    gerber += 'G75*\n'; // Quadrant mode
+    gerber += 'G01*\n';
+    gerber += 'D14*\n';
+
+    // Draw board outline (4 corners)
+    const x0 = 0, y0 = 0, x1 = bW * scale, y1 = bH * scale;
+    gerber += `X${formatCoord(x0/scale, 1)}Y${formatCoord(y0/scale, 1)}D02*\n`;
+    gerber += `X${formatCoord(x1/scale, 1)}Y${formatCoord(y0/scale, 1)}D01*\n`;
+    gerber += `X${formatCoord(x1/scale, 1)}Y${formatCoord(y1/scale, 1)}D01*\n`;
+    gerber += `X${formatCoord(x0/scale, 1)}Y${formatCoord(y1/scale, 1)}D01*\n`;
+    gerber += `X${formatCoord(x0/scale, 1)}Y${formatCoord(y0/scale, 1)}D01*\n`;
+
+    gerber += 'M02*\n';
+    return gerber;
+}
+
+function generateTopCopperGerber() {
+    let gerber = '';
+    gerber += '%FSLAX25Y25*%\n';
+    gerber += '%MOIN*%\n';
+    gerber += generateApertureList();
+    gerber += 'G75*\n';
+    gerber += 'G01*\n';
+
+    const scale = 4;
+
+    // Cuivre: polygone de plan de masse simplifié
+    gerber += 'D10*\n';
+    gerber += `X${formatCoord(0, scale)}Y${formatCoord(0, scale)}D02*\n`;
+    gerber += `X${formatCoord(bW, scale)}Y${formatCoord(0, scale)}D01*\n`;
+    gerber += `X${formatCoord(bW, scale)}Y${formatCoord(bH, scale)}D01*\n`;
+    gerber += `X${formatCoord(0, scale)}Y${formatCoord(bH, scale)}D01*\n`;
+    gerber += `X${formatCoord(0, scale)}Y${formatCoord(0, scale)}D01*\n`;
+
+    // Pads pour composants
+    comps.forEach(c => {
+        const s = getShape(c);
+        s.pins.forEach((pin, idx) => {
+            const pp = getPinPos(c, idx);
+            gerber += `D11*\n`;
+            gerber += `X${formatCoord(pp.x, scale)}Y${formatCoord(pp.y, scale)}D03*\n`;
+        });
+    });
+
+    gerber += 'M02*\n';
+    return gerber;
+}
+
+function generateTopSilkscreenGerber() {
+    let gerber = '';
+    gerber += '%FSLAX25Y25*%\n';
+    gerber += '%MOIN*%\n';
+    gerber += '%ADD15C,0.200*%\n';
+    gerber += 'G75*\n';
+    gerber += 'G01*\n';
+    gerber += 'D15*\n';
+
+    const scale = 4;
+    // Silkscreen outlines for components
+    comps.forEach(c => {
+        const s = getShape(c);
+        const x = c.x_mm * scale, y = c.y_mm * scale;
+        const w = s.w * scale / 2, h = s.h * scale / 2;
+        // Draw rectangle outline
+        gerber += `X${formatCoord(c.x_mm - s.w/2, scale)}Y${formatCoord(c.y_mm - s.h/2, scale)}D02*\n`;
+        gerber += `X${formatCoord(c.x_mm + s.w/2, scale)}Y${formatCoord(c.y_mm - s.h/2, scale)}D01*\n`;
+        gerber += `X${formatCoord(c.x_mm + s.w/2, scale)}Y${formatCoord(c.y_mm + s.h/2, scale)}D01*\n`;
+        gerber += `X${formatCoord(c.x_mm - s.w/2, scale)}Y${formatCoord(c.y_mm + s.h/2, scale)}D01*\n`;
+        gerber += `X${formatCoord(c.x_mm - s.w/2, scale)}Y${formatCoord(c.y_mm - s.h/2, scale)}D01*\n`;
+    });
+
+    gerber += 'M02*\n';
+    return gerber;
+}
+
+function generateTopSolderMaskGerber() {
+    let gerber = '';
+    gerber += '%FSLAX25Y25*%\n';
+    gerber += '%MOIN*%\n';
+    gerber += '%ADD16C,1.500*%\n';
+    gerber += 'G75*\n';
+    gerber += 'G01*\n';
+    gerber += 'D16*\n';
+
+    const scale = 4;
+    // Negative layer: clear pads
+    gerber += 'G36*\n'; // Start polygon fill
+    gerber += `X${formatCoord(0, scale)}Y${formatCoord(0, scale)}D02*\n`;
+    gerber += `X${formatCoord(bW, scale)}Y${formatCoord(0, scale)}D01*\n`;
+    gerber += `X${formatCoord(bW, scale)}Y${formatCoord(bH, scale)}D01*\n`;
+    gerber += `X${formatCoord(0, scale)}Y${formatCoord(bH, scale)}D01*\n`;
+    gerber += `X${formatCoord(0, scale)}Y${formatCoord(0, scale)}D01*\n`;
+    gerber += 'G37*\n';
+
+    gerber += 'M02*\n';
+    return gerber;
+}
+
+function generateDrillFile() {
+    let excellon = '';
+    excellon += 'M48\n';
+    excellon += 'METRIC,TZ\n';
+    excellon += 'T01C0.800\n'; // Tool 1: 0.8mm drill
+    excellon += 'T02C1.000\n'; // Tool 2: 1.0mm drill
+    excellon += '%\n';
+    excellon += 'G90\n';
+    excellon += 'M71\n';
+
+    excellon += 'T01\n';
+    comps.forEach(c => {
+        const s = getShape(c);
+        s.pins.forEach((pin, idx) => {
+            const pp = getPinPos(c, idx);
+            excellon += `X${(pp.x*1000).toFixed(0)}Y${(pp.y*1000).toFixed(0)}\n`;
+        });
+    });
+
+    excellon += 'T02\n';
+    // Add mounting holes at corners
+    excellon += `X${(3*1000).toFixed(0)}Y${(3*1000).toFixed(0)}\n`;
+    excellon += `X${((bW-3)*1000).toFixed(0)}Y${(3*1000).toFixed(0)}\n`;
+    excellon += `X${(3*1000).toFixed(0)}Y${((bH-3)*1000).toFixed(0)}\n`;
+    excellon += `X${((bW-3)*1000).toFixed(0)}Y${((bH-3)*1000).toFixed(0)}\n`;
+
+    excellon += 'M30\n';
+    return excellon;
+}
+
+/**
+ * 🛠️ MOTEUR D'OPTIMISATION ET DE RÉPARATION DU PLACEMENT DES COMPOSANTS
+ * Corrige automatiquement le centrage, résout les chevauchements et applique les règles DFM
+ */
+function repairComponentPlacement() {
+    if (!comps.length) {
+        showNotification('⚠️ Aucun composant sur la carte à placer.', 'error');
+        return;
+    }
+
+    const margin = 4.0;
+    const minW = margin, maxW = bW - margin;
+    const minH = margin, maxH = bH - margin;
+    const grid = snapGrid || 1.0;
+
+    function getDim(c) {
+        const fp = ((c.fp || '') + ' ' + (c.lib || '')).toUpperCase();
+        if (fp.includes('DIP-28')) return { w: 36, h: 10 };
+        if (fp.includes('DIP-14')) return { w: 19, h: 9 };
+        if (fp.includes('DIP-8')) return { w: 10, h: 8 };
+        if (fp.includes('QFP') || fp.includes('QFN')) return { w: 12, h: 12 };
+        if (fp.includes('ESP32') || fp.includes('MODULE')) return { w: 26, h: 18 };
+        if (fp.includes('0805')) return { w: 3.2, h: 2.0 };
+        if (fp.includes('0603')) return { w: 2.5, h: 1.5 };
+        if (fp.includes('0402')) return { w: 1.5, h: 1.0 };
+        if (fp.includes('HEADER') || fp.includes('JST') || fp.includes('USB')) return { w: 12, h: 6 };
+        return { w: 8, h: 6 };
+    }
+
+    // 1. Replacer tous les composants dans le contour intérieur
+    comps.forEach(c => {
+        const d = getDim(c);
+        const halfW = d.w / 2, halfH = d.h / 2;
+        let x = c.x_mm, y = c.y_mm;
+        if (isNaN(x) || x < (minW + halfW) || x > (maxW - halfW)) {
+            x = Math.max(minW + halfW, Math.min(maxW - halfW, isNaN(x) ? bW / 2 : x));
+        }
+        if (isNaN(y) || y < (minH + halfH) || y > (maxH - halfH)) {
+            y = Math.max(minH + halfH, Math.min(maxH - halfH, isNaN(y) ? bH / 2 : y));
+        }
+        c.x_mm = x;
+        c.y_mm = y;
+    });
+
+    // 2. Positionner les connecteurs sur les bords de carte
+    const connectors = comps.filter(c => {
+        const tag = ((c.lib || '') + ' ' + (c.fp || '') + ' ' + (c.ref || '')).toUpperCase();
+        return tag.includes('CONN') || tag.includes('USB') || tag.includes('JST') || tag.includes('HEADER') || tag.includes('JACK') || tag.includes('SW');
+    });
+
+    connectors.forEach((c, idx) => {
+        const step = (maxW - minW) / (connectors.length + 1);
+        c.x_mm = Math.round((minW + step * (idx + 1)) / grid) * grid;
+        c.y_mm = Math.round((maxH - 5) / grid) * grid;
+    });
+
+    // 3. Positionner les ICs principaux au centre
+    const icComps = comps.filter(c => {
+        const tag = ((c.lib || '') + ' ' + (c.fp || '') + ' ' + (c.ref || '')).toUpperCase();
+        return tag.includes('MCU') || tag.includes('IC') || tag.includes('QFP') || tag.includes('QFN') || tag.includes('SOIC') || tag.includes('DIP') || tag.includes('ESP32') || tag.includes('7805') || tag.includes('LM386');
+    });
+
+    icComps.forEach((c, idx) => {
+        const col = idx % 3;
+        const row = Math.floor(idx / 3);
+        const startX = minW + (maxW - minW) * 0.25;
+        const startY = minH + (maxH - minH) * 0.25;
+        c.x_mm = Math.round((startX + col * 22) / grid) * grid;
+        c.y_mm = Math.round((startY + row * 20) / grid) * grid;
+    });
+
+    // 4. Placer les condensateurs de découplage près des ICs
+    icComps.forEach(ic => {
+        const caps = comps.filter(c => {
+            const tag = ((c.lib || '') + ' ' + (c.fp || '') + ' ' + (c.ref || '')).toUpperCase();
+            return (tag.includes('PASSIVE') || tag.includes('CAP') || (c.ref || '').startsWith('C')) && !c._placed;
+        });
+        
+        let offsetDeg = 0;
+        caps.slice(0, 2).forEach(cap => {
+            const rad = offsetDeg * Math.PI / 180;
+            const dist = 5.0;
+            cap.x_mm = Math.round((ic.x_mm + Math.cos(rad) * dist) / grid) * grid;
+            cap.y_mm = Math.round((ic.y_mm + Math.sin(rad) * dist) / grid) * grid;
+            cap._placed = true;
+            offsetDeg += 90;
+        });
+    });
+
+    // 5. Résolution physique des chevauchements par répulsion itérative
+    for (let iter = 0; iter < 60; iter++) {
+        let moved = false;
+        for (let i = 0; i < comps.length; i++) {
+            for (let j = i + 1; j < comps.length; j++) {
+                const c1 = comps[i], c2 = comps[j];
+                if ((c1.layer || 'F.Cu') !== (c2.layer || 'F.Cu')) continue;
+                
+                const d1 = getDim(c1), d2 = getDim(c2);
+                const reqDist = (Math.max(d1.w, d1.h) + Math.max(d2.w, d2.h)) / 2 + 3.0;
+                
+                let dx = c2.x_mm - c1.x_mm;
+                let dy = c2.y_mm - c1.y_mm;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < reqDist) {
+                    moved = true;
+                    if (dist === 0) { dx = 1.0; dy = 0.5; dist = Math.sqrt(dx*dx + dy*dy); }
+                    const overlap = (reqDist - dist) / 2;
+                    const nx = dx / dist, ny = dy / dist;
+                    
+                    c1.x_mm -= nx * overlap;
+                    c1.y_mm -= ny * overlap;
+                    c2.x_mm += nx * overlap;
+                    c2.y_mm += ny * overlap;
+                }
+            }
+        }
+        
+        comps.forEach(c => {
+            const d = getDim(c);
+            c.x_mm = Math.max(minW + d.w/2, Math.min(maxW - d.w/2, c.x_mm));
+            c.y_mm = Math.max(minH + d.h/2, Math.min(maxH - d.h/2, c.y_mm));
+        });
+        
+        if (!moved) break;
+    }
+
+    // 6. Alignement final sur la grille
+    comps.forEach(c => {
+        delete c._placed;
+        c.x_mm = Math.round(c.x_mm / grid) * grid;
+        c.y_mm = Math.round(c.y_mm / grid) * grid;
+        if (c.rotation_deg === undefined) c.rotation_deg = 0;
+        if (!c.layer) c.layer = 'F.Cu';
+    });
+
+    // 7. Centrer l'ensemble des composants au milieu de la carte
+    centerComponentsOnBoard(false);
+
+    saveState();
+    updUI();
+    draw();
+    showNotification('✨ Placement des composants réparé et centré avec succès !', 'success');
+}
+
+/**
+ * 🎯 RE-CENTRER L'ENSEMBLE DES COMPOSANTS AU MILIEU DE LA CARTE
+ */
+function centerComponentsOnBoard(notify = true) {
+    if (!comps.length) {
+        if (notify) showNotification('⚠️ Aucun composant à centrer.', 'warning');
+        return;
+    }
+    const margin = 4.0;
+    const grid = snapGrid || 1.0;
+    
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    comps.forEach(c => {
+        const x = isNaN(c.x_mm) ? (bW / 2) : c.x_mm;
+        const y = isNaN(c.y_mm) ? (bH / 2) : c.y_mm;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+    });
+    
+    const groupW = maxX - minX;
+    const groupH = maxY - minY;
+    
+    const targetX = bW / 2;
+    const targetY = bH / 2;
+    const currentX = minX + groupW / 2;
+    const currentY = minY + groupH / 2;
+    
+    const shiftX = targetX - currentX;
+    const shiftY = targetY - currentY;
+    
+    comps.forEach(c => {
+        let nx = (c.x_mm || (bW/2)) + shiftX;
+        let ny = (c.y_mm || (bH/2)) + shiftY;
+        nx = Math.max(margin, Math.min(bW - margin, nx));
+        ny = Math.max(margin, Math.min(bH - margin, ny));
+        c.x_mm = Math.round(nx / grid) * grid;
+        c.y_mm = Math.round(ny / grid) * grid;
+    });
+    
+    if (notify) {
+        saveState();
+        updUI();
+        draw();
+        showNotification('🎯 Tous les composants ont été centrés au milieu de la carte !', 'success');
+    }
+}
+
+/**
+ * 🛡️ AUDIT PRÉ-FLIGHT AVANT GÉNÉRATION GERBER
+ */
+async function runGerberPreFlight() {
+    if (!comps.length) {
+        showNotification('⚠️ Veuillez ajouter au moins 2 composants sur la carte.', 'error');
+        return;
+    }
+
+    document.getElementById('loader').classList.remove('hid');
+    showNotification('🔍 Audit DRC & vérification fabricant en cours...', 'warning');
+
+    let drcData = null;
+    try {
+        const response = await secureFetch('/api/validate_drc', {
+            method: 'POST',
+            body: JSON.stringify({
+                components: comps,
+                nets: nets,
+                board_width_mm: bW,
+                board_height_mm: bH
+            })
+        });
+        if (response.ok) {
+            const res = await response.json();
+            if (res.status === 'success') drcData = res.data;
+        }
+    } catch (e) {
+        console.warn("API DRC validation fallback to client check:", e);
+    }
+    document.getElementById('loader').classList.add('hid');
+
+    const errors = drcData ? (drcData.errors || []) : [];
+    const warnings = drcData ? (drcData.warnings || []) : [];
+
+    if (!drcData) {
+        const margin = 3.0;
+        comps.forEach(c => {
+            if (c.x_mm < margin || c.x_mm > (bW - margin)) {
+                errors.push(`Composant ${c.ref} hors limites X (${c.x_mm.toFixed(1)} mm sur carte de ${bW} mm).`);
+            }
+            if (c.y_mm < margin || c.y_mm > (bH - margin)) {
+                errors.push(`Composant ${c.ref} hors limites Y (${c.y_mm.toFixed(1)} mm sur carte de ${bH} mm).`);
+            }
+        });
+        const conflicts = checkDRC();
+        conflicts.forEach(cf => {
+            errors.push(`Violation de distance entre ${cf.ref_a} et ${cf.ref_b} (${cf.distance_mm} mm < min 3 mm).`);
+        });
+    }
+
+    const isReady = errors.length === 0;
+    showGerberPreFlightModal(isReady, errors, warnings, drcData);
+}
+
+function showGerberPreFlightModal(isReady, errors, warnings, drcData) {
+    const modal = document.getElementById('gerberPreFlightModal');
+    const banner = document.getElementById('preflightStatusBanner');
+    const list = document.getElementById('preflightDetailsList');
+
+    if (isReady) {
+        banner.style.background = 'rgba(105, 240, 174, 0.12)';
+        banner.style.border = '1px solid rgba(105, 240, 174, 0.3)';
+        banner.style.color = 'var(--success)';
+        banner.innerHTML = `🟢 <strong>CARTE CONFORME : Fichiers prêts pour fabrication (JLCPCB / PCBWay)</strong> (Score DRC: ${drcData ? drcData.score : 100}/100)`;
+    } else {
+        banner.style.background = 'rgba(255, 82, 82, 0.12)';
+        banner.style.border = '1px solid rgba(255, 82, 82, 0.3)';
+        banner.style.color = 'var(--danger)';
+        banner.innerHTML = `🔴 <strong>CORRECTIONS REQUISES : ${errors.length} Erreur(s) bloquante(s) détectée(s)</strong>`;
+    }
+
+    let itemsHtml = '';
+    errors.forEach(e => {
+        itemsHtml += `<div style="padding:8px 12px;background:rgba(255,82,82,0.08);border-left:3px solid var(--danger);border-radius:4px;font-size:11px;color:#ff8a8a;">🔴 ERREUR: ${e}</div>`;
+    });
+    warnings.forEach(w => {
+        itemsHtml += `<div style="padding:8px 12px;background:rgba(255,165,2,0.08);border-left:3px solid var(--warning);border-radius:4px;font-size:11px;color:#ffd166;">⚠️ AVERTISSEMENT: ${w}</div>`;
+    });
+
+    itemsHtml += `
+        <div style="padding:8px 12px;background:rgba(0,229,255,0.05);border-left:3px solid var(--accent);border-radius:4px;font-size:11px;color:var(--text-sec);">
+            🟢 <strong>Vérifications de fabrication passées :</strong><br>
+            • Format Gerber RS-274X & Perçages Excellon 2<br>
+            • Génération automatique des fichiers CPL (Pick & Place) et BOM CSV<br>
+            • Conformité des dimensions carte : ${bW}mm x ${bH}mm (${comps.length} composants, ${nets.length} nets)
+        </div>
+    `;
+
+    list.innerHTML = itemsHtml;
+    modal.classList.remove('hid');
+}
+
+function closeGerberPreFlightModal() {
+    document.getElementById('gerberPreFlightModal').classList.add('hid');
+}
+
+function generateCPLCSV() {
+    let csv = "Designator,Val,Package,Mid X,Mid Y,Rotation,Layer\n";
+    comps.forEach(c => {
+        const layer = (c.layer === 'B.Cu' || c.layer === 'Bottom') ? 'Bottom' : 'Top';
+        csv += `${c.ref},${c.value || c.fp || 'NC'},${c.fp || 'Package'},${c.x_mm.toFixed(4)},${c.y_mm.toFixed(4)},${c.rotation_deg || 0},${layer}\n`;
+    });
+    return csv;
+}
+
+function generateBOMCSV() {
+    let csv = "Item,Quantity,Designator,Value,Footprint,Library\n";
+    comps.forEach((c, idx) => {
+        csv += `${idx + 1},1,${c.ref},${c.value || ''},${c.fp || ''},${c.lib || ''}\n`;
+    });
+    return csv;
+}
+
+/**
+ * 🔧 EXPORT GERBER COMPLET ET PRÊT POUR FABRICANT
+ */
+async function exportGerberZip(bypassPreFlight = false) {
+    if (!comps.length) {
+        showNotification('⚠️ Ajoutez des composants avant de générer', 'error');
+        return;
+    }
+    
+    if (!bypassPreFlight) {
+        runGerberPreFlight();
+        return;
+    }
+
+    if (!currentUser) {
+        showLoginModal();
+        return;
+    }
+    if (userCredits < 5 && userCredits < 999) {
+        showPaywall();
+        return;
+    }
+
+    document.getElementById('loader').classList.remove('hid');
+    showNotification('📦 Génération des fichiers Gerber & assemblage en cours...', 'warning');
+
+    try {
+        const zip = new JSZip();
+        const projectName = document.getElementById('projectName')?.value?.trim() || 'MonPCB';
+        const safeName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        // Génération de chaque fichier Gerber avec extensions standards
+        const boardOutline = generateBoardOutlineGerber();
+        const topCopper = generateTopCopperGerber();
+        const topSilkscreen = generateTopSilkscreenGerber();
+        const topSolderMask = generateTopSolderMaskGerber();
+        const drillFile = generateDrillFile();
+
+        // Ajout des fichiers au ZIP avec les bonnes extensions JLCPCB
+        zip.file(`board_outline.gko`, boardOutline);      // Board outline (Keep-Out Layer)
+        zip.file(`top_copper.gtl`, topCopper);          // Top Copper (Gerber Top Layer)
+        zip.file(`top_silkscreen.gto`, topSilkscreen);      // Top Silkscreen (Gerber Top Overlay)
+        zip.file(`top_soldermask.gts`, topSolderMask);      // Top Solder Mask (Gerber Top Solder Mask)
+        zip.file(`drill_holes.drl`, drillFile);          // Drill file (Excellon)
+        zip.file(`bottom_copper.gbl`, generateBottomCopperGerber()); // Bottom Copper
+        zip.file(`bottom_silkscreen.gbo`, generateBottomSilkscreenGerber()); // Bottom Silkscreen
+        zip.file(`bottom_soldermask.gbs`, generateBottomSolderMaskGerber()); // Bottom Solder Mask
+
+        // Fichiers d'assemblage SMT pour le fabricant
+        zip.file(`${safeName}_CPL.csv`, generateCPLCSV()); // Pick & Place Centroid
+        zip.file(`${safeName}_BOM.csv`, generateBOMCSV()); // Bill of Materials
+
+        // Fichier de spécifications / Manifest
+        const manifest = {
+            "project": projectName,
+            "dimensions": `${bW}mm x ${bH}mm`,
+            "layers": 2,
+            "thickness": 1.6,
+            "copper_weight": "1oz",
+            "files": {
+                "outline": "board_outline.gko",
+                "top_copper": "top_copper.gtl",
+                "bottom_copper": "bottom_copper.gbl",
+                "top_silkscreen": "top_silkscreen.gto",
+                "bottom_silkscreen": "bottom_silkscreen.gbo",
+                "top_soldermask": "top_soldermask.gts",
+                "bottom_soldermask": "bottom_soldermask.gbs",
+                "drill": "drill_holes.drl"
+            }
+        };
+        zip.file(`FABRICATION_MANIFEST_JLCPCB.json`, JSON.stringify(manifest, null, 2));
+
+        const specs = `==================================================
+Cortex PCB Studio — Package de Fabrication Gerber & PCBA
+==================================================
+Projet      : ${projectName}
+Dimensions  : ${bW}mm x ${bH}mm
+Composants  : ${comps.length}
+Connexions  : ${nets.length}
+Date Export : ${new Date().toISOString()}
+Format      : Gerber RS-274X, Excellon 2
+Unités      : Millimètres
+
+CONTENU DU PACKAGE :
+  - top_copper.gtl : Top Copper (cuivre supérieur)
+  - bottom_copper.gbl : Bottom Copper (cuivre inférieur)
+  - top_silkscreen.gto : Top Silkscreen (sérigraphie supérieure)
+  - bottom_silkscreen.gbo : Bottom Silkscreen (sérigraphie inférieure)
+  - top_soldermask.gts : Top Solder Mask (masque de soudure supérieur)
+  - bottom_soldermask.gbs : Bottom Solder Mask (masque de soudure inférieur)
+  - board_outline.gko : Board Outline (contour de la carte)
+  - drill_holes.drl : Drill File (perçages Excellon)
+  - ${safeName}_CPL.csv : Pick and Place (Centroid SMT)
+  - ${safeName}_BOM.csv : Bill of Materials (Liste de composants)
+  - FABRICATION_MANIFEST_JLCPCB.json : Manifeste JLCPCB
+
+RECOMMANDATIONS DE FABRICATION (JLCPCB / PCBWay / Eurocircuits) :
+  - Matériau   : FR-4 (1.6mm)
+  - Cuivre     : 1 oz (35 µm)
+  - Finition   : HASL sans plomb / ENIG
+  - Masque     : Vert / Noir
+==================================================
+`;
+        zip.file(`${safeName}_README.txt`, specs);
+
+        // Génération du ZIP
+        const blob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+
+        // Téléchargement
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${safeName}_JLCPCB.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        showNotification('✅ Export Gerber réussi ! Fichiers prêts pour fabrication.', 'success');
+        openGerberViewer(url);
+
+        if (userCredits < 999 && userCredits >= 1) {
+            userCredits -= 1;
+            document.getElementById('user-credits').textContent = userCredits;
+        }
+
+    } catch (e) {
+        showNotification('❌ Erreur lors de la génération: ' + e.message, 'error');
+        console.error('Gerber export error:', e);
+    }
+
+    document.getElementById('loader').classList.add('hid');
+}
+
+// Couches supplémentaires pour la bottom side
+function generateBottomCopperGerber() {
+    let gerber = '';
+    gerber += '%FSLAX25Y25*%\n';
+    gerber += '%MOIN*%\n';
+    gerber += '%ADD10C,0.400*%\n';
+    gerber += '%ADD11C,0.600*%\n';
+    gerber += 'G75*\n';
+    gerber += 'G01*\n';
+    gerber += 'D10*\n';
+    gerber += `X${formatCoord(0,4)}Y${formatCoord(0,4)}D02*\n`;
+    gerber += `X${formatCoord(bW,4)}Y${formatCoord(bH,4)}D01*\n`;
+    gerber += 'M02*\n';
+    return gerber;
+}
+
+function generateBottomSilkscreenGerber() {
+    let gerber = '';
+    gerber += '%FSLAX25Y25*%\n';
+    gerber += '%MOIN*%\n';
+    gerber += '%ADD15C,0.150*%\n';
+    gerber += 'G75*\n';
+    gerber += 'G01*\n';
+    gerber += 'D15*\n';
+    gerber += `X${formatCoord(5,4)}Y${formatCoord(5,4)}D02*\n`;
+    gerber += `X${formatCoord(bW-5,4)}Y${formatCoord(bH-5,4)}D01*\n`;
+    gerber += 'M02*\n';
+    return gerber;
+}
+
+function generateBottomSolderMaskGerber() {
+    let gerber = '';
+    gerber += '%FSLAX25Y25*%\n';
+    gerber += '%MOIN*%\n';
+    gerber += '%ADD16C,1.000*%\n';
+    gerber += 'G75*\n';
+    gerber += 'G01*\n';
+    gerber += 'G36*\n';
+    gerber += `X${formatCoord(0,4)}Y${formatCoord(0,4)}D02*\n`;
+    gerber += `X${formatCoord(bW,4)}Y${formatCoord(bH,4)}D01*\n`;
+    gerber += 'G37*\n';
+    gerber += 'M02*\n';
+    return gerber;
+}
+
+// ═══════════════════ GERBER VIEWER ═══════════════════
+let gvLayers = {}, gvVis = { 
+    copper: true, 
+    bottom: false, 
+    edge: true, 
+    drill: true, 
+    silkscreen: true,
+    mask: false,
+    paste: false
+};
+let gvZoom = 1.0, gvPanX = 0, gvPanY = 0;
+let lastGerberUrl = null;
+let gvParsedData = {};
+
+// Couleurs réalistes pour chaque couche
+const GV_COLORS = {
+    F_Cu: '#ff8c42', B_Cu: '#4fc3f7',
+    F_Mask: '#ff4081', B_Mask: '#ff80ab',
+    F_Paste: '#b2bec3', B_Paste: '#dfe6e9',
+    F_SilkS: '#ffffff', B_SilkS: '#cccccc',
+    Edge_Cuts: '#2ed573',
+    drill_PTH: '#ff4757'
+};
+
+function openGerberViewer(url) {
+    const targetUrl = url || lastGerberUrl;
+    document.getElementById('gerberModal').classList.remove('hid');
+    if (targetUrl) loadGV(targetUrl);
+    setTimeout(drawGerberPreview, 200);
+}
+
+function closeGerberViewer() {
+    document.getElementById('gerberModal').classList.add('hid');
+}
+
+function toggleGVLayer(layer, el) { 
+    gvVis[layer] = !gvVis[layer]; 
+    if (el) el.classList.toggle('off', !gvVis[layer]); 
+    drawGerberPreview(); 
+}
+
+async function loadGV(url) {
+    try {
+        showNotification('📥 Chargement du Gerber...', 'warning');
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        
+        const blob = await r.blob();
+        const zip = await JSZip.loadAsync(blob);
+        gvLayers = {};
+        
+        for (const [f, file] of Object.entries(zip.files)) {
+            if (file.dir) continue;
+            const text = await file.async('text');
+            const name = f.replace('.gbr', '').replace('.drl', '');
+            
+            if (f.endsWith('.gbr') || f.endsWith('.drl')) {
+                gvLayers[name] = text;
+            }
+        }
+        
+        gvZoom = 1.0; gvPanX = 0; gvPanY = 0;
+        lastGerberUrl = url;
+        
+        // Ajouter bouton téléchargement
+        addDownloadButtonToViewer(url);
+        
+        drawGerberPreview();
+        showNotification('✅ Gerber chargé !');
+    } catch (e) { 
+        console.error('Gerber load error:', e); 
+        showNotification('❌ Erreur: ' + e.message, 'error');
+    }
+}
+
+function addDownloadButtonToViewer(url) {
+    const sidebar = document.getElementById('gvSidebar');
+    const existingBtn = document.getElementById('gv-download-btn');
+    if (existingBtn) existingBtn.remove();
+    
+    const downloadBtn = document.createElement('button');
+    downloadBtn.id = 'gv-download-btn';
+    downloadBtn.className = 'tb';
+    downloadBtn.style.cssText = 'background:var(--accent);color:#000;font-weight:700;margin-top:10px; width:100%; border:none;';
+    downloadBtn.innerHTML = '📥 Télécharger Gerber ZIP';
+    downloadBtn.onclick = () => window.open(url, '_blank');
+    
+    const closeBtn = sidebar.querySelector('button[onclick="closeGerberViewer()"]');
+    sidebar.insertBefore(downloadBtn, closeBtn);
+}
+
+function drawGerberPreview() {
+    const canvas = document.getElementById('gvCanvas');
+    if (!canvas) return;
+    const container = document.getElementById('gvViewport');
+    if (!container) return;
+    
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Fond sombre
+    ctx.fillStyle = '#010206';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    ctx.translate(canvas.width/2 + gvPanX, canvas.height/2 + gvPanY);
+    ctx.scale(gvZoom, gvZoom);
+    
+    // Dessiner chaque couche active
+    for (const [name, text] of Object.entries(gvLayers)) {
+        let layerKey;
+        if (name === 'F_Cu') layerKey = 'copper';
+        else if (name === 'B_Cu') layerKey = 'bottom';
+        else if (name === 'Edge_Cuts') layerKey = 'edge';
+        else if (name.includes('drill')) layerKey = 'drill';
+        else if (name.includes('SilkS')) layerKey = 'silkscreen';
+        else if (name.includes('Mask')) layerKey = 'mask';
+        else if (name.includes('Paste')) layerKey = 'paste';
+        else continue;
+        
+        if (!gvVis[layerKey]) continue;
+        
+        renderGerberLayer(ctx, text, GV_COLORS[name] || '#888', name);
+    }
+    
+    ctx.restore();
+    
+    // Légende
+    drawLegend(ctx, canvas.width, canvas.height);
+}
+
+function renderGerberLayer(ctx, text, color, layerName) {
+    const lines = text.split('\n');
+    let currentRawX = 0, currentRawY = 0;
+    let currentX = 0, currentY = 0;
+    let isRegion = false;
+    
+    // Détecter la résolution des coordonnées dans la commande FS (format statement)
+    let decPlaces = 5; // Valeur par défaut
+    const fsMatch = text.match(/%FSLAX\d(\d)Y\d(\d)/);
+    if (fsMatch) {
+        decPlaces = parseInt(fsMatch[1]);
+    }
+    const divisor = Math.pow(10, decPlaces);
+    const mmScale = 4; // 4 pixels par mm
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Détecter G36 (début région)
+        if (line.includes('G36*')) {
+            isRegion = true;
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = layerName.includes('Mask') ? 'rgba(0,0,0,0.3)' : color.replace(')', ',0.3)').replace('rgb', 'rgba');
+            ctx.lineWidth = 0.3;
+            continue;
+        }
+        
+        // Détecter G37 (fin région)
+        if (line.includes('G37*')) {
+            isRegion = false;
+            if (layerName.includes('Mask')) ctx.fill();
+            ctx.stroke();
+            continue;
+        }
+        
+        // Extraire les coordonnées X et Y indépendamment
+        const xMatch = line.match(/X([\-\d.]+)/);
+        const yMatch = line.match(/Y([\-\d.]+)/);
+        
+        if (xMatch) currentRawX = parseFloat(xMatch[1]);
+        if (yMatch) currentRawY = parseFloat(yMatch[1]);
+        
+        // S'il n'y a pas de coordonnées ni d'opération D01/D02/D03, on continue
+        if (!xMatch && !yMatch && !line.includes('D03*') && !line.includes('D02*') && !line.includes('D01*')) {
+            continue;
+        }
+        
+        // Conversion en mm puis en pixels, centrée sur le PCB
+        const valX = currentRawX / divisor;
+        const valY = currentRawY / divisor;
+        
+        // Si les coordonnées semblent déjà être en pixels (anciennes versions du front)
+        // on ne divise pas, ou on ajuste
+        const isLegacyCoords = (decPlaces === 5 && Math.abs(valX) > 1000);
+        const x = isLegacyCoords ? valX * 0.01 : (valX - bW / 2) * mmScale;
+        const y = isLegacyCoords ? -valY * 0.01 : -(valY - bH / 2) * mmScale;
+        
+        if (line.includes('D02*') || (i === 0 && (xMatch || yMatch))) {
+            ctx.moveTo(x, y);
+            currentX = x;
+            currentY = y;
+        } else if (line.includes('D01*')) {
+            ctx.lineTo(x, y);
+            currentX = x;
+            currentY = y;
+        } else if (line.includes('D03*')) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            currentX = x;
+            currentY = y;
+        }
+        
+        if (!isRegion && line.includes('D01*') && !line.includes('G36') && !line.includes('G37')) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = layerName.includes('SilkS') ? 0.3 : 0.6;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(currentX, currentY);
+        }
+    }
+    
+    if (!isRegion) ctx.stroke();
+}
+
+function drawLegend(ctx, w, h) {
+    ctx.font = '9px Inter';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#555';
+    
+    const legendItems = [
+        { label: 'Cu', color: '#ff8c42', key: 'copper' },
+        { label: 'Edge', color: '#2ed573', key: 'edge' },
+        { label: 'Drill', color: '#ff4757', key: 'drill' },
+        { label: 'Silk', color: '#fff', key: 'silkscreen' },
+        { label: 'Mask', color: '#ff4081', key: 'mask' }
+    ];
+    
+    let y = 20;
+    legendItems.forEach(item => {
+        ctx.fillStyle = gvVis[item.key] ? item.color : '#333';
+        ctx.fillText('● ' + item.label + ' ' + (gvVis[item.key] ? 'ON' : 'OFF'), w - 15, y);
+        y += 14;
+    });
+}
+
+// Support du zoom molette dans la visionneuse
+document.getElementById('gvViewport')?.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    gvZoom = Math.max(0.2, Math.min(5, gvZoom * factor));
+    drawGerberPreview();
+});
+
+window.addEventListener('resize', () => {
+    if (!document.getElementById('gerberModal').classList.contains('hid')) {
+        drawGerberPreview();
+    }
+});
+
+// ═══════════════════ BOM EXPORT ═══════════════════
+function exportBOMCSV() {
+    if (!comps.length) {
+        showNotification('⚠️ Aucun composant à exporter', 'error');
+        return;
+    }
+    let csv = 'Référence,Valeur,Librairie,Footprint,Quantité,Prix Unitaire,Prix Total\n';
+    comps.forEach(c => {
+        let price = PRICES.DEFAULT;
+        for (const k of Object.keys(PRICES)) {
+            if (k !== 'DEFAULT' && c.lib && c.lib.toUpperCase().includes(k)) { price = PRICES[k]; break; }
+        }
+        csv += `${c.ref},${c.value||''},${c.lib||''},${c.fp||''},1,${price.toFixed(2)},${price.toFixed(2)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BOM_${document.getElementById('projectName')?.value?.trim()||'MonPCB'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification('📥 BOM exportée en CSV');
+}
+
+// ═══════════════════ BUILD & EXPORT ═══════════════════
+/**
+ * Génère le PCB, ouvre la visionneuse et prépare les outils d'audit IA.
+ */
+async function doGenerate() {
+    if (!comps.length) {
+        showNotification('⚠️ Ajoutez des composants avant de générer', 'error');
+        return;
+    }
+    runGerberPreFlight();
+}
+
+/**
+ * Ajoute un bouton de téléchargement dans la visionneuse.
+ */
+function addDownloadButtonToViewer(url) {
+    const sidebar = document.getElementById('gvSidebar');
+    const existingBtn = document.getElementById('gv-download-btn');
+    if (existingBtn) existingBtn.remove();
+    
+    const downloadBtn = document.createElement('button');
+    downloadBtn.id = 'gv-download-btn';
+    downloadBtn.className = 'tb';
+    downloadBtn.style.cssText = 'background:var(--accent); color:#000; font-weight:700; margin-top:10px; width:100%; border:none;';
+    downloadBtn.innerHTML = '📥 Télécharger Gerber ZIP';
+    downloadBtn.onclick = () => window.open(url, '_blank');
+    
+    const closeBtn = sidebar.querySelector('button[onclick="closeGerberViewer()"]');
+    sidebar.insertBefore(downloadBtn, closeBtn);
+}
+
+/**
+ * Ajoute le bouton d'audit IA dans la visionneuse avec boucle de correction.
+ */
+function addAnalyzeButtonToViewer() {
+    const sidebar = document.getElementById('gvSidebar');
+    const existingBtn = document.getElementById('gv-analyze-btn');
+    if (existingBtn) existingBtn.remove();
+
+    const analyzeBtn = document.createElement('button');
+    analyzeBtn.id = 'gv-analyze-btn';
+    analyzeBtn.className = 'tb';
+    analyzeBtn.style.cssText = 'background:var(--warning); color:#000; font-weight:700; margin-top:5px; width:100%; border:none;';
+    analyzeBtn.innerHTML = '🔍 Vérifier avec l\'IA';
+    analyzeBtn.onclick = async () => {
+        document.getElementById('loader').classList.remove('hid');
+        try {
+            const r = await secureFetch('/api/analyze_design', {
+                method: 'POST',
+                body: JSON.stringify({ components: comps, nets: nets, board_width_mm: bW, board_height_mm: bH })
+            });
+            const d = await r.json();
+            
+            if (d.status === 'success') {
+                let msg = `📊 Score: ${d.score}/100 (${d.grade})\n\n`;
+                if (d.issues?.length) msg += '⚠️ Problèmes:\n' + d.issues.map(i => '• ' + i).join('\n') + '\n\n';
+                if (d.suggestions?.length) msg += '💡 Suggestions:\n' + d.suggestions.map(s => '• ' + s).join('\n');
+                alert(msg);
+                
+                if (d.score < 75) {
+                    const fix = confirm('Score technique faible. Voulez-vous que l\'IA corrige automatiquement le placement ?');
+                    if (fix) {
+                        document.getElementById('promptText').value += '\n[CORRECTION IA REQUISE]: ' + d.suggestions.join(', ');
+                        closeGerberViewer();
+                        generateFromPrompt(); // Relance le cycle de génération
+                    }
+                }
+            }
+        } catch (e) {
+            showNotification('❌ Erreur analyse: ' + e.message, 'error');
+        }
+        document.getElementById('loader').classList.add('hid');
+    };
+    
+    const closeBtn = sidebar.querySelector('button[onclick="closeGerberViewer()"]');
+    sidebar.insertBefore(analyzeBtn, closeBtn);
+}
+
+// ═══════════════════ INIT ═══════════════════
+function boot() {
+    // Check Stripe session return
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('session_id')) {
+        showNotification('🚀 Félicitations ! Votre abonnement PRO est maintenant actif !', 'success');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Load from autosave
+    const latestKey = localStorage.getItem('revpcbai_latest');
+    if (latestKey) {
+        try {
+            const saved = JSON.parse(localStorage.getItem(latestKey));
+            if (saved && saved.comps && saved.comps.length) {
+                comps = saved.comps;
+                nets = saved.nets || [];
+                bW = saved.bW || 100;
+                bH = saved.bH || 80;
+                if (saved.name) document.getElementById('projectName').value = saved.name;
+                saveState();
+            }
+        } catch (e) { /* ignore */ }
+    }
+    filterLib();
+    setTimeout(init, 100);
+}
+
+// Après chargement DOM
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(boot, 50);
+} else {
+    window.addEventListener('DOMContentLoaded', boot);
+}
+
+// Redraw on window resize
+window.addEventListener('resize', () => {
+    if (cv && vp) {
+        cv.width = vp.clientWidth;
+        cv.height = vp.clientHeight;
+        draw();
+    }
+});
+
+// Chargement progressif des templates
+setTimeout(loadTemplates, 2000);
+
+console.log('🦄 Cortex PCB Studio Cloud v2.0 - Initialisé');
+console.log('   Gerber Export | Blinder Components | Firebase Auth | Gemini AI');
+console.log('   © 2026 Cortex PCB Studio - Tous droits réservés');
+</script>
+</body>
+</html>

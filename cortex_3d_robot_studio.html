@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JAR Robotics Studio — Simulateur & Contrôle 6-Axes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        :root {
+            --bg-base: #06090e;
+            --bg-panel: #0d121c;
+            --bg-card: #131b29;
+            --border: #1e293b;
+            --cyan: #00f0ff;
+            --emerald: #00ffaa;
+            --purple: #a855f7;
+            --yellow: #eab308;
+            --danger: #ef4444;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg-base); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* Navigation Supérieure */
+        header {
+            height: 48px; background: var(--bg-panel); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 17px; color: var(--emerald); letter-spacing: 0.5px; }
+        .badge { background: rgba(0, 255, 170, 0.12); border: 1px solid rgba(0, 255, 170, 0.3); color: var(--emerald); padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+        .estop-btn {
+            background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; font-weight: 800; font-size: 12px;
+            padding: 6px 16px; border-radius: 8px; border: 1px solid #f87171; cursor: pointer; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            display: flex; align-items: center; gap: 6px; transition: all .2s;
+        }
+        .estop-btn:hover { background: #dc2626; transform: scale(1.03); }
+
+        /* Conteneur Principal */
+        .main-layout { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+        /* Zone 3D */
+        #viewport-container {
+            flex: 1; position: relative; background: radial-gradient(circle at center, #0e1726 0%, #06090e 100%);
+            overflow: hidden;
+        }
+        #canvas-3d { width: 100%; height: 100%; display: block; }
+        .viewport-overlay {
+            position: absolute; top: 16px; left: 16px; background: rgba(13, 18, 28, 0.85); backdrop-filter: blur(8px);
+            border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 12px; pointer-events: none;
+        }
+        .viewport-overlay b { color: var(--cyan); }
+
+        /* Panneau Latéral Droit */
+        aside {
+            width: 460px; background: var(--bg-panel); border-left: 1px solid var(--border);
+            display: flex; flex-direction: column; overflow: hidden; z-index: 10;
+        }
+
+        /* Onglets de contrôle */
+        .tabs { display: flex; border-bottom: 1px solid var(--border); background: #080d14; }
+        .tab-btn {
+            flex: 1; padding: 12px 8px; background: transparent; border: none; color: var(--text-muted);
+            font-weight: 700; font-size: 12px; cursor: pointer; transition: all .2s; text-align: center; border-bottom: 2px solid transparent;
+        }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--cyan); border-bottom: 2px solid var(--cyan); background: rgba(0, 240, 255, 0.05); }
+
+        .tab-content { flex: 1; overflow-y: auto; padding: 16px; display: none; }
+        .tab-content.active { display: flex; flex-direction: column; gap: 16px; }
+
+        /* Cartes & Contrôles */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .card-title { font-size: 13px; font-weight: 700; color: var(--emerald); display: flex; justify-content: space-between; align-items: center; }
+
+        .joint-row { display: flex; flex-direction: column; gap: 4px; }
+        .joint-header { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 600; }
+        input[type=range] {
+            width: 100%; accent-color: var(--cyan); height: 5px; background: #243044; border-radius: 4px; outline: none; cursor: pointer;
+        }
+
+        .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .btn-action {
+            background: #1e293b; border: 1px solid #334155; color: #f1f5f9; font-weight: 700; font-size: 11.5px;
+            padding: 8px; border-radius: 6px; cursor: pointer; text-align: center; transition: all .15s;
+        }
+        .btn-action:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0, 240, 255, 0.1); }
+        .btn-action.primary { background: linear-gradient(135deg, var(--emerald), #059669); color: #000; border: none; }
+        .btn-action.primary:hover { opacity: 0.9; }
+
+        /* Éditeur de code */
+        .code-area {
+            width: 100%; height: 220px; background: #070a0f; border: 1px solid #1e293b; border-radius: 8px;
+            color: #38bdf8; font-family: 'Fira Code', monospace; font-size: 12.5px; padding: 10px; resize: vertical; outline: none;
+            line-height: 1.5; tab-size: 4;
+        }
+        .terminal-log {
+            height: 120px; background: #030712; border: 1px solid #1f2937; border-radius: 8px;
+            font-family: 'Fira Code', monospace; font-size: 11px; color: var(--emerald); padding: 8px; overflow-y: auto; white-space: pre-wrap;
+        }
+
+        /* Télémétrie */
+        .telemetry-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .tele-box { background: #0c1320; border: 1px solid #1f293d; border-radius: 6px; padding: 8px 12px; }
+        .tele-label { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+        .tele-val { font-size: 15px; font-weight: 800; font-family: 'Fira Code', monospace; color: var(--cyan); margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <span>🦾 JAR ROBOTICS STUDIO</span>
+            <span class="badge">SIMULATEUR 6-AXES</span>
+            <span class="badge" style="color:var(--cyan); border-color:rgba(0,240,255,0.3)">WORKSPACE ATELIER</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px">
+            <span id="comm-status" style="font-size:12px; color:var(--emerald)">🟢 Moteur Cinématique Prêt</span>
+            <button class="estop-btn" onclick="emergencyStop()">🛑 ARRÊT D'URGENCE</button>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- Rendu 3D Interactif -->
+        <div id="viewport-container">
+            <div class="viewport-overlay">
+                <div>Position Effecteur : <b id="disp-pos">X: 0.0 Y: 0.0 Z: 0.0</b></div>
+                <div>Orientation Pince : <b id="disp-pitch">0.0°</b> | Pince : <b id="disp-grip">Fermée (0%)</b></div>
+                <div style="margin-top:4px; font-size:11px; color:var(--text-muted)">Contrôle 3D : Clic gauche (Rotation) · Droit (Pan) · Molette (Zoom)</div>
+            </div>
+            <div id="canvas-3d"></div>
+        </div>
+
+        <!-- Panneau de Pilotage & Programmation -->
+        <aside>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tab-jog')">🕹️ Pilotage Jog</button>
+                <button class="tab-btn" onclick="switchTab('tab-code')">💻 Programmation</button>
+                <button class="tab-btn" onclick="switchTab('tab-telemetry')">📊 Télémétrie</button>
+            </div>
+
+            <!-- ONGLET 1 : PILOTAGE MANUEL -->
+            <div id="tab-jog" class="tab-content active">
+                <div class="card">
+                    <div class="card-title">
+                        <span>Angles Articulaires (Cinématique Directe)</span>
+                        <button class="btn-action" style="padding:2px 8px; font-size:10px" onclick="setHome()">Origine (Home)</button>
+                    </div>
+                    
+                    <div class="joint-row">
+                        <div class="joint-header"><span>J1 : Base Tourelle (Yaw)</span><span id="v-j1">0°</span></div>
+                        <input type="range" id="j1" min="-180" max="180" value="0" oninput="onJointChange()">
+                    </div>
+                    <div class="joint-row">
+                        <div class="joint-header"><span>J2 : Épaule (Shoulder)</span><span id="v-j2">0°</span></div>
+                        <input type="range" id="j2" min="-90" max="110" value="0" oninput="onJointChange()">
+                    </div>
+                    <div class="joint-row">
+                        <div class="joint-header"><span>J3 : Coude (Elbow)</span><span id="v-j3">0°</span></div>
+                        <input type="range" id="j3" min="-150" max="150" value="0" oninput="onJointChange()">
+                    </div>
+                    <div class="joint-row">
+                        <div class="joint-header"><span>J4 : Poignet Tangage (Pitch)</span><span id="v-j4">0°</span></div>
+                        <input type="range" id="j4" min="-100" max="100" value="0" oninput="onJointChange()">
+                    </div>
+                    <div class="joint-row">
+                        <div class="joint-header"><span>J5 : Poignet Roulis (Roll)</span><span id="v-j5">0°</span></div>
+                        <input type="range" id="j5" min="-180" max="180" value="0" oninput="onJointChange()">
+                    </div>
+                    <div class="joint-row">
+                        <div class="joint-header"><span>J6 : Pince / Effecteur (0-100%)</span><span id="v-grip">0%</span></div>
+                        <input type="range" id="grip" min="0" max="100" value="0" oninput="onGripChange()">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cible Cartésienne (Cinématique Inverse)</div>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+                        <div><label style="font-size:11px;color:var(--text-muted)">X (mm)</label><input type="number" id="ik-x" value="120" style="width:100%; background:#090d14; border:1px solid #334155; color:#fff; padding:6px; border-radius:4px"></div>
+                        <div><label style="font-size:11px;color:var(--text-muted)">Y (mm)</label><input type="number" id="ik-y" value="0" style="width:100%; background:#090d14; border:1px solid #334155; color:#fff; padding:6px; border-radius:4px"></div>
+                        <div><label style="font-size:11px;color:var(--text-muted)">Z (mm)</label><input type="number" id="ik-z" value="140" style="width:100%; background:#090d14; border:1px solid #334155; color:#fff; padding:6px; border-radius:4px"></div>
+                    </div>
+                    <button class="btn-action primary" style="margin-top:6px" onclick="solveIKFromInputs()">Calculer & Atteindre la Cible IK ▸</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Positions Préréglées</div>
+                    <div class="btn-grid">
+                        <button class="btn-action" onclick="applyPreset('home')">Home (Repos)</button>
+                        <button class="btn-action" onclick="applyPreset('pick')">Prise (Pick)</button>
+                        <button class="btn-action" onclick="applyPreset('place')">Dépôt (Place)</button>
+                        <button class="btn-action" onclick="applyPreset('inspect')">Inspection</button>
+                        <button class="btn-action" onclick="applyPreset('straight')">Vertical</button>
+                        <button class="btn-action" onclick="applyPreset('pallet')">Palette 1</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ONGLET 2 : PROGRAMMATION -->
+            <div id="tab-code" class="tab-content">
+                <div class="card">
+                    <div class="card-title">
+                        <span>Éditeur de Scripts JAR-Bot</span>
+                        <select id="scenario-select" style="background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px; font-size:11px; padding:3px 6px" onchange="loadScenario()">
+                            <option value="pick_place">Scénario 1 : Pick & Place (Prise/Dépôt)</option>
+                            <option value="spiral">Scénario 2 : Trajectoire Circulaire 3D</option>
+                            <option value="palletize">Scénario 3 : Palettisation 2x2</option>
+                            <option value="wave">Scénario 4 : Salutation Articulaire</option>
+                        </select>
+                    </div>
+                    <textarea id="code-editor" class="code-area"></textarea>
+                    
+                    <div style="display:flex; gap:8px; align-items:center">
+                        <button class="btn-action primary" style="flex:1" onclick="runScript()">▶ Exécuter le Programme</button>
+                        <button class="btn-action" style="flex:1" onclick="stepScript()">⏭ Pas-à-pas</button>
+                        <button class="btn-action" onclick="stopScript()">⏹ Stop</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Console d'Exécution & Sortie</div>
+                    <div id="terminal-out" class="terminal-log">JAR-Bot Runtime prêt. Chargez un script et cliquez sur Exécuter.</div>
+                </div>
+            </div>
+
+            <!-- ONGLET 3 : TÉLÉMÉTRIE -->
+            <div id="tab-telemetry" class="tab-content">
+                <div class="card">
+                    <div class="card-title">Télémétrie en Direct</div>
+                    <div class="telemetry-grid">
+                        <div class="tele-box"><div class="tele-label">Portée Totale</div><div class="tele-val" id="tele-reach">0 mm</div></div>
+                        <div class="tele-box"><div class="tele-label">Vitesse Estimée</div><div class="tele-val" id="tele-spd">0 mm/s</div></div>
+                        <div class="tele-box"><div class="tele-label">Collision Sol</div><div class="tele-val" id="tele-col" style="color:var(--emerald)">AUCUNE</div></div>
+                        <div class="tele-box"><div class="tele-label">Statut Matériel</div><div class="tele-val" id="tele-hw" style="color:var(--emerald)">SIMULÉ (100%)</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Pont Matériel Externe (ESP32 / Arduino / ROS 2)</div>
+                    <div style="font-size:12px; color:var(--text-muted); line-height:1.5">
+                        Les angles peuvent être streamés en continu via le port série USB (ex: <code>/dev/ttyUSB1</code>) ou WebSockets vers les servomoteurs réels du robot physique.
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:6px">
+                        <input id="hw-port" value="/dev/ttyUSB1" style="background:#090d14; border:1px solid #334155; color:#fff; padding:6px; border-radius:4px; flex:1; font-size:12px">
+                        <button class="btn-action" onclick="connectHardware()">Connecter Série</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // ====================================================================
+        // GÉOMÉTRIE CINÉMATIQUE DU BRAS JAR (mm)
+        // ====================================================================
+        const L0 = 80;  // Base
+        const L1 = 120; // Bras
+        const L2 = 100; // Avant-bras
+        const L3 = 60;  // Poignet
+        const L4 = 40;  // Effecteur / Pince
+
+        let currentJoints = [0, 0, 0, 0, 0, 0];
+        let gripperVal = 0;
+        let isEmergencyStopped = false;
+
+        // Variables Three.js
+        let scene, camera, renderer, controls;
+        let baseMesh, shoulderMesh, armMesh, forearmMesh, wristMesh, gripperLeft, gripperRight;
+        let targetSphere, trailLine, trailGeometry;
+        let trailPoints = [];
+
+        function init3D() {
+            const container = document.getElementById('viewport-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, width / height, 1, 3000);
+            camera.position.set(320, 260, 360);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('canvas-3d').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 80, 0);
+            controls.enableDamping = true;
+
+            // Éclairage
+            const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+            scene.add(ambient);
+
+            const dirLight = new THREE.DirectionalLight(0x00f0ff, 0.8);
+            dirLight.position.set(200, 400, 200);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x00ffaa, 0.6, 600);
+            pointLight.position.set(-100, 150, -100);
+            scene.add(pointLight);
+
+            // Grille & Sol
+            const grid = new THREE.GridHelper(600, 30, 0x1e293b, 0x0f172a);
+            grid.position.y = 0;
+            scene.add(grid);
+
+            // Matériaux du Robot
+            const matDarkMetal = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.8 });
+            const matCyanAccent = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.2, metalness: 0.5, emissive: 0x003344 });
+            const matGoldJoint = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.3, metalness: 0.9 });
+            const matEmerald = new THREE.MeshStandardMaterial({ color: 0x00ffaa, roughness: 0.2, metalness: 0.7 });
+
+            // 1. Embase fixe
+            const baseGeom = new THREE.CylinderGeometry(45, 55, 20, 32);
+            const basePlinth = new THREE.Mesh(baseGeom, matDarkMetal);
+            basePlinth.position.y = 10;
+            scene.add(basePlinth);
+
+            // 2. Tourelle pivotante (Joint 1 - Base Yaw)
+            baseMesh = new THREE.Group();
+            baseMesh.position.y = 20;
+            scene.add(baseMesh);
+
+            const turretGeom = new THREE.CylinderGeometry(35, 40, L0 - 20, 24);
+            const turret = new THREE.Mesh(turretGeom, matDarkMetal);
+            turret.position.y = (L0 - 20) / 2;
+            baseMesh.add(turret);
+
+            // 3. Épaule (Joint 2 - Shoulder Pitch)
+            shoulderMesh = new THREE.Group();
+            shoulderMesh.position.y = L0 - 20;
+            baseMesh.add(shoulderMesh);
+
+            const shoulderJointGeom = new THREE.CylinderGeometry(20, 20, 44, 24);
+            shoulderJointGeom.rotateZ(Math.PI / 2);
+            const shoulderJoint = new THREE.Mesh(shoulderJointGeom, matGoldJoint);
+            shoulderMesh.add(shoulderJoint);
+
+            // 4. Bras supérieur (L1)
+            armMesh = new THREE.Group();
+            shoulderMesh.add(armMesh);
+
+            const b1Geom = new THREE.BoxGeometry(22, L1, 28);
+            const b1 = new THREE.Mesh(b1Geom, matCyanAccent);
+            b1.position.y = L1 / 2;
+            armMesh.add(b1);
+
+            // 5. Coude (Joint 3 - Elbow Pitch)
+            forearmMesh = new THREE.Group();
+            forearmMesh.position.y = L1;
+            armMesh.add(forearmMesh);
+
+            const elbowGeom = new THREE.CylinderGeometry(16, 16, 36, 24);
+            elbowGeom.rotateZ(Math.PI / 2);
+            const elbow = new THREE.Mesh(elbowGeom, matGoldJoint);
+            forearmMesh.add(elbow);
+
+            // 6. Avant-bras (L2)
+            const b2Geom = new THREE.BoxGeometry(18, L2, 22);
+            const b2 = new THREE.Mesh(b2Geom, matDarkMetal);
+            b2.position.y = L2 / 2;
+            forearmMesh.add(b2);
+
+            // 7. Poignet (Joint 4 & 5)
+            wristMesh = new THREE.Group();
+            wristMesh.position.y = L2;
+            forearmMesh.add(wristMesh);
+
+            const wristGeom = new THREE.CylinderGeometry(14, 14, 22, 24);
+            const wristJoint = new THREE.Mesh(wristGeom, matEmerald);
+            wristJoint.position.y = L3 / 3;
+            wristMesh.add(wristJoint);
+
+            // 8. Pince Effecteur (End-Effector)
+            const toolGroup = new THREE.Group();
+            toolGroup.position.y = L3;
+            wristMesh.add(toolGroup);
+
+            const gripBase = new THREE.Mesh(new THREE.BoxGeometry(32, 10, 20), matDarkMetal);
+            toolGroup.add(gripBase);
+
+            const fGeom = new THREE.BoxGeometry(6, 26, 8);
+            gripperLeft = new THREE.Mesh(fGeom, matCyanAccent);
+            gripperLeft.position.set(-10, 16, 0);
+            toolGroup.add(gripperLeft);
+
+            gripperRight = new THREE.Mesh(fGeom, matCyanAccent);
+            gripperRight.position.set(10, 16, 0);
+            toolGroup.add(gripperRight);
+
+            // Indicateur de Cible 3D (Target Sphere)
+            const tGeom = new THREE.SphereGeometry(8, 16, 16);
+            const tMat = new THREE.MeshBasicMaterial({ color: 0xff0055, wireframe: true });
+            targetSphere = new THREE.Mesh(tGeom, tMat);
+            targetSphere.position.set(120, 140, 0);
+            scene.add(targetSphere);
+
+            // Traçage de trajectoire
+            trailGeometry = new THREE.BufferGeometry();
+            const trailMat = new THREE.LineBasicMaterial({ color: 0x00ffaa, linewidth: 2 });
+            trailLine = new THREE.Line(trailGeometry, trailMat);
+            scene.add(trailLine);
+
+            // Cubes de test / environnement
+            createEnvironmentObjects();
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+            updateRobotDisplay();
+        }
+
+        function createEnvironmentObjects() {
+            // Table de prélèvement
+            const tableGeom = new THREE.BoxGeometry(60, 40, 60);
+            const tableMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+            const table1 = new THREE.Mesh(tableGeom, tableMat);
+            table1.position.set(140, 20, 60);
+            scene.add(table1);
+
+            // Pièce à manipuler (Cube vert)
+            const pieceGeom = new THREE.BoxGeometry(16, 16, 16);
+            const pieceMat = new THREE.MeshStandardMaterial({ color: 0x00ffaa, emissive: 0x003311 });
+            const piece = new THREE.Mesh(pieceGeom, pieceMat);
+            piece.position.set(140, 48, 60);
+            scene.add(piece);
+
+            // Bac de dépôt
+            const binGeom = new THREE.BoxGeometry(70, 30, 70);
+            const binMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, wireframe: true });
+            const bin = new THREE.Mesh(binGeom, binMat);
+            bin.position.set(-130, 15, 80);
+            scene.add(bin);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('viewport-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ====================================================================
+        // MISE À JOUR CINÉMATIQUE & RENDU
+        // ====================================================================
+        function updateRobotDisplay() {
+            if (isEmergencyStopped) return;
+
+            const rad = currentJoints.map(j => THREE.MathUtils.degToRad(j));
+
+            // Articulations Three.js
+            baseMesh.rotation.y = -rad[0];          // J1 (Base Yaw)
+            shoulderMesh.rotation.z = rad[1];      // J2 (Shoulder Pitch)
+            forearmMesh.rotation.z = rad[2];       // J3 (Elbow Pitch)
+            wristMesh.rotation.z = rad[3];         // J4 (Wrist Pitch)
+            wristMesh.rotation.y = rad[4];         // J5 (Wrist Roll)
+
+            // Pince
+            const gripOffset = 6 + (gripperVal / 100) * 8;
+            gripperLeft.position.x = -gripOffset;
+            gripperRight.position.x = gripOffset;
+
+            // Calcul Direct de l'Effecteur pour l'affichage
+            const th1 = rad[0], th2 = rad[1], th3 = rad[2], th4 = rad[3];
+            const phi4 = th2 + th3 + th4;
+            const r_eff = L1 * Math.sin(th2) + L2 * Math.sin(th2 + th3) + (L3 + L4) * Math.sin(phi4);
+            const z_eff = L0 + L1 * Math.cos(th2) + L2 * Math.cos(th2 + th3) + (L3 + L4) * Math.cos(phi4);
+            const x_eff = r_eff * Math.cos(th1);
+            const y_eff = r_eff * Math.sin(th1);
+
+            document.getElementById('disp-pos').innerText = `X: ${x_eff.toFixed(1)} Y: ${y_eff.toFixed(1)} Z: ${z_eff.toFixed(1)}`;
+            document.getElementById('disp-pitch').innerText = `${(th2 + th3 + th4) * 180 / Math.PI | 0}°`;
+            document.getElementById('disp-grip').innerText = `${gripperVal.toFixed(0)}%`;
+
+            // Télémétrie
+            const reach = Math.sqrt(x_eff*x_eff + y_eff*y_eff + (z_eff - L0)*(z_eff - L0));
+            document.getElementById('tele-reach').innerText = `${reach.toFixed(0)} mm`;
+
+            // Traçage du sillage
+            if (trailPoints.length > 120) trailPoints.shift();
+            trailPoints.push(new THREE.Vector3(x_eff, z_eff, -y_eff));
+            trailGeometry.setFromPoints(trailPoints);
+        }
+
+        // ====================================================================
+        // ÉCOUTEURS D'INTERFACE & SLIDERS
+        // ====================================================================
+        function onJointChange() {
+            currentJoints[0] = parseFloat(document.getElementById('j1').value);
+            currentJoints[1] = parseFloat(document.getElementById('j2').value);
+            currentJoints[2] = parseFloat(document.getElementById('j3').value);
+            currentJoints[3] = parseFloat(document.getElementById('j4').value);
+            currentJoints[4] = parseFloat(document.getElementById('j5').value);
+
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`v-j${i}`).innerText = `${currentJoints[i-1]}°`;
+            }
+            updateRobotDisplay();
+        }
+
+        function onGripChange() {
+            gripperVal = parseFloat(document.getElementById('grip').value);
+            document.getElementById('v-grip').innerText = `${gripperVal}%`;
+            updateRobotDisplay();
+        }
+
+        function setHome() {
+            currentJoints = [0, 0, 0, 0, 0, 0];
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`j${i}`).value = 0;
+                document.getElementById(`v-j${i}`).innerText = `0°`;
+            }
+            updateRobotDisplay();
+            logTerm("Robot repositionné à l'Origine (Home).");
+        }
+
+        // ====================================================================
+        // CINÉMATIQUE INVERSE (IK) EN TEMPS RÉEL
+        // ====================================================================
+        function solveIK(tx, ty, tz, pitchDeg = 0) {
+            const th1 = Math.atan2(ty, tx);
+            const r_horiz = Math.sqrt(tx*tx + ty*ty);
+            const z_eff = tz - L0;
+
+            const pitchRad = pitchDeg * Math.PI / 180;
+            const wrist_r = r_horiz - (L3 + L4) * Math.sin(pitchRad);
+            const wrist_z = z_eff - (L3 + L4) * Math.cos(pitchRad);
+
+            const d_sq = wrist_r*wrist_r + wrist_z*wrist_z;
+            const d = Math.sqrt(Math.max(0.001, d_sq));
+
+            if (d > (L1 + L2)) {
+                return { success: false, err: "Cible hors de l'enveloppe de portée maximale" };
+            }
+
+            const cos_elbow = (L1*L1 + L2*L2 - d_sq) / (2 * L1 * L2);
+            const elbow_int = Math.acos(Math.max(-1, Math.min(1, cos_elbow)));
+            const th3 = Math.PI - elbow_int;
+
+            const alpha = Math.atan2(wrist_r, wrist_z);
+            const cos_beta = (L1*L1 + d_sq - L2*L2) / (2 * L1 * d);
+            const beta = Math.acos(Math.max(-1, Math.min(1, cos_beta)));
+            const th2 = alpha - beta;
+
+            const th4 = pitchRad - (th2 + th3);
+
+            return {
+                success: true,
+                joints: [
+                    th1 * 180 / Math.PI,
+                    th2 * 180 / Math.PI,
+                    th3 * 180 / Math.PI,
+                    th4 * 180 / Math.PI,
+                    currentJoints[4]
+                ]
+            };
+        }
+
+        function solveIKFromInputs() {
+            const tx = parseFloat(document.getElementById('ik-x').value);
+            const ty = parseFloat(document.getElementById('ik-y').value);
+            const tz = parseFloat(document.getElementById('ik-z').value);
+
+            targetSphere.position.set(tx, tz, -ty);
+            const res = solveIK(tx, ty, tz, 0);
+
+            if (res.success) {
+                currentJoints = res.joints;
+                for (let i = 1; i <= 5; i++) {
+                    document.getElementById(`j${i}`).value = currentJoints[i-1].toFixed(1);
+                    document.getElementById(`v-j${i}`).innerText = `${currentJoints[i-1].toFixed(1)}°`;
+                }
+                updateRobotDisplay();
+                logTerm(`Cible IK atteinte : X=${tx}, Y=${ty}, Z=${tz}`);
+            } else {
+                logTerm(`⚠️ Erreur IK : ${res.err}`, "warn");
+            }
+        }
+
+        // ====================================================================
+        // PRÉRÉGLAGES
+        // ====================================================================
+        function applyPreset(name) {
+            const presets = {
+                'home': [0, 0, 0, 0, 0],
+                'pick': [24, 38, 52, -30, 0],
+                'place': [-60, 42, 45, -20, 0],
+                'inspect': [0, 15, -45, 30, 90],
+                'straight': [0, 0, 0, 0, 0],
+                'pallet': [45, 30, 60, -40, 0]
+            };
+            if (presets[name]) {
+                currentJoints = [...presets[name]];
+                for (let i = 1; i <= 5; i++) {
+                    document.getElementById(`j${i}`).value = currentJoints[i-1];
+                    document.getElementById(`v-j${i}`).innerText = `${currentJoints[i-1]}°`;
+                }
+                updateRobotDisplay();
+                logTerm(`Preset appliqué : ${name.toUpperCase()}`);
+            }
+        }
+
+        // ====================================================================
+        // GESTION DES SCÉNARIOS & PROGRAMMATION
+        // ====================================================================
+        const SCENARIOS = {
+            'pick_place': `# Programme Robotique JAR — Pick & Place
+HOME
+WAIT 0.5
+# 1. Approche de la table de prélèvement
+MOVE 140 60 90
+GRIP 100
+WAIT 0.4
+# 2. Descente et saisie de la pièce
+MOVE 140 60 50
+GRIP 0
+WAIT 0.6
+# 3. Élévation sécurisée
+MOVE 140 60 110
+WAIT 0.3
+# 4. Déplacement vers le bac de dépôt
+MOVE -130 80 120
+MOVE -130 80 55
+# 5. Relâchement
+GRIP 100
+WAIT 0.5
+MOVE -130 80 120
+HOME`,
+            'spiral': `# Traçage Spatial 3D
+HOME
+MOVE 120 0 100
+MOVE 100 50 120
+MOVE 0 120 140
+MOVE -100 50 160
+MOVE -120 0 180
+HOME`,
+            'palletize': `# Cycle de Palettisation
+HOME
+MOVE 100 100 60
+GRIP 100
+WAIT 0.3
+GRIP 0
+MOVE 100 100 120
+MOVE -100 -50 80
+GRIP 100
+HOME`,
+            'wave': `# Salutation Articulaire
+JOINT 0 20 -20 0 0
+JOINT 30 20 -20 0 45
+JOINT -30 20 -20 0 -45
+JOINT 30 20 -20 0 45
+HOME`
+        };
+
+        function loadScenario() {
+            const key = document.getElementById('scenario-select').value;
+            document.getElementById('code-editor').value = SCENARIOS[key] || "";
+        }
+
+        let scriptRunning = false;
+        let scriptLines = [];
+        let scriptIndex = 0;
+
+        function runScript() {
+            if (scriptRunning) return;
+            const text = document.getElementById('code-editor').value;
+            scriptLines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+            if (!scriptLines.length) {
+                logTerm("⚠️ Aucun ordre exécutable dans le script.", "warn");
+                return;
+            }
+            scriptIndex = 0;
+            scriptRunning = true;
+            logTerm("🚀 Démarrage de l'exécution du programme robot...");
+            executeNextStep();
+        }
+
+        function executeNextStep() {
+            if (!scriptRunning || scriptIndex >= scriptLines.length) {
+                scriptRunning = false;
+                logTerm("✅ Programme terminé avec succès.");
+                return;
+            }
+
+            const line = scriptLines[scriptIndex++];
+            logTerm(`[Ligne ${scriptIndex}] ${line}`);
+            const parts = line.split(/\s+/);
+            const cmd = parts[0].toUpperCase();
+
+            let delay = 350;
+
+            if (cmd === 'HOME') {
+                setHome();
+            } else if (cmd === 'MOVE') {
+                const x = parseFloat(parts[1]), y = parseFloat(parts[2]), z = parseFloat(parts[3]);
+                const p = parts[4] ? parseFloat(parts[4]) : 0;
+                targetSphere.position.set(x, z, -y);
+                const res = solveIK(x, y, z, p);
+                if (res.success) {
+                    currentJoints = res.joints;
+                    updateRobotDisplay();
+                } else {
+                    logTerm(`⚠️ Cible inatteignable : ${line}`, "warn");
+                }
+                delay = 600;
+            } else if (cmd === 'JOINT') {
+                for (let i = 1; i <= 5; i++) {
+                    if (parts[i] !== undefined) currentJoints[i-1] = parseFloat(parts[i]);
+                }
+                updateRobotDisplay();
+                delay = 500;
+            } else if (cmd === 'GRIP') {
+                gripperVal = parseFloat(parts[1]);
+                document.getElementById('grip').value = gripperVal;
+                updateRobotDisplay();
+                delay = 400;
+            } else if (cmd === 'WAIT') {
+                delay = (parseFloat(parts[1]) || 0.5) * 1000;
+            }
+
+            setTimeout(executeNextStep, delay);
+        }
+
+        function stepScript() {
+            if (!scriptLines.length) {
+                const text = document.getElementById('code-editor').value;
+                scriptLines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+                scriptIndex = 0;
+            }
+            if (scriptIndex < scriptLines.length) {
+                scriptRunning = true;
+                const line = scriptLines[scriptIndex++];
+                logTerm(`[Pas ${scriptIndex}] ${line}`);
+                // Simple step
+                const parts = line.split(/\s+/);
+                const cmd = parts[0].toUpperCase();
+                if (cmd === 'HOME') setHome();
+                else if (cmd === 'MOVE') {
+                    const res = solveIK(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+                    if (res.success) { currentJoints = res.joints; updateRobotDisplay(); }
+                } else if (cmd === 'GRIP') {
+                    gripperVal = parseFloat(parts[1]);
+                    document.getElementById('grip').value = gripperVal;
+                    updateRobotDisplay();
+                }
+            } else {
+                logTerm("Fin du script atteinte.");
+                scriptLines = [];
+            }
+        }
+
+        function stopScript() {
+            scriptRunning = false;
+            logTerm("⏹ Exécution stoppée par l'utilisateur.");
+        }
+
+        function emergencyStop() {
+            isEmergencyStopped = true;
+            scriptRunning = false;
+            document.getElementById('comm-status').innerHTML = "🔴 <b style='color:var(--danger)'>ARRÊT D'URGENCE ACTIF</b>";
+            logTerm("🛑 ARRÊT D'URGENCE DÉCLENCHÉ ! Moteurs désactivés.", "err");
+            setTimeout(() => {
+                if (confirm("Réarmer la sécurité robotique JAR ?")) {
+                    isEmergencyStopped = false;
+                    document.getElementById('comm-status').innerHTML = "🟢 Moteur Cinématique Réarmé";
+                    logTerm("🟢 Système réarmé.");
+                }
+            }, 500);
+        }
+
+        function logTerm(msg, type = "info") {
+            const box = document.getElementById('terminal-out');
+            const color = type === "warn" ? "#facc15" : (type === "err" ? "#ef4444" : "#00ffaa");
+            box.innerHTML += `\n<span style="color:${color}">[${new Date().toLocaleTimeString()}] ${msg}</span>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function connectHardware() {
+            const p = document.getElementById('hw-port').value;
+            logTerm(`Tentative de liaison série avec ${p}...`);
+            setTimeout(() => {
+                logTerm(`✅ Connecté en émulation matérielle 115200 bauds sur ${p}`);
+                document.getElementById('tele-hw').innerText = "CONNECTÉ (HW)";
+            }, 600);
+        }
+
+        // Initialisation au chargement
+        window.onload = () => {
+            init3D();
+            loadScenario();
+        };
+    </script>
+</body>
+</html>

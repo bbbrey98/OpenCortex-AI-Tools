@@ -1,0 +1,72 @@
+```html
+<div class="panel" id="p-impr">
+    <div class="header">Contrôle Impression 3D</div>
+    <div class="content">
+        <div class="row">
+            <div class="col">
+                <h3>Températures</h3>
+                <div class="temp-display">
+                    <span>Buse: <span id="buse-temp">0°C</span></span>
+                    <span>Plateau: <span id="plateau-temp">0°C</span></span>
+                </div>
+            </div>
+            <div class="col">
+                <h3>Position XYZ</h3>
+                <div class="position-display">
+                    <span>X: <span id="x-pos">0mm</span></span>
+                    <span>Y: <span id="y-pos">0mm</span></span>
+                    <span>Z: <span id="z-pos">0mm</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="bar" id="job-progress"></div>
+            <span id="progress-text">0%</span>
+        </div>
+        <div class="prompt-area">
+            <input type="text" id="prompt-input" placeholder="Fais un cube 20mm">
+            <button onclick="startJob()">Fabriquer</button>
+        </div>
+        <div class="emergency-stop">
+            <button onclick="stopJob()" style="background-color: red; color: white;">STOP</button>
+        </div>
+        <div class="system-messages" id="system-messages"></div>
+    </div>
+</div>
+
+<script>
+    function updateStatus() {
+        J('/api/impr_etat').then(data => {
+            if (data.job) {
+                document.getElementById('job-progress').style.width = `${(data.job.ligne / data.job.total) * 100}%`;
+                document.getElementById('progress-text').innerText = `${(data.job.ligne / data.job.total) * 100.toFixed(2)}%`;
+                document.getElementById('system-messages').innerText = data.job.msg;
+            } else {
+                document.getElementById('buse-temp').innerText = `${data.buse[0]}°C`;
+                document.getElementById('plateau-temp').innerText = `${data.plateau[0]}°C`;
+                document.getElementById('x-pos').innerText = `${data.xyz[0]}mm`;
+                document.getElementById('y-pos').innerText = `${data.xyz[1]}mm`;
+                document.getElementById('z-pos').innerText = `${data.xyz[2]}mm`;
+            }
+        });
+    }
+
+    function startJob() {
+        const promptInput = document.getElementById('prompt-input');
+        J(`/api/impr_dire?texte=${encodeURIComponent(promptInput.value)}`).then(() => {
+            promptInput.value = '';
+        });
+    }
+
+    function stopJob() {
+        J('/api/impr_stop').then(() => {
+            document.getElementById('system-messages').innerText = 'Arrêt d\'urgence effectué.';
+        });
+    }
+
+    setInterval(updateStatus, 1000);
+
+    // Initial scan
+    J('/api/impr_scan');
+</script>
+```
